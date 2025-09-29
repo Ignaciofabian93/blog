@@ -8,6 +8,10 @@ export const typeDefs = gql`
     id: ID! @external
   }
 
+  extend type Admin @key(fields: "id") {
+    id: ID! @external
+  }
+
   # Blog-specific enums
   enum BlogStatus {
     DRAFT
@@ -29,15 +33,6 @@ export const typeDefs = gql`
     ENVIRONMENTAL_IMPACT
     SUSTAINABLE_LIVING
     OTHER
-  }
-
-  # Admin type for blog authoring
-  type Admin @key(fields: "id") {
-    id: ID!
-    email: String!
-    name: String!
-    createdAt: DateTime!
-    updatedAt: DateTime!
   }
 
   type BlogComment {
@@ -103,6 +98,7 @@ export const typeDefs = gql`
 
   extend type Query {
     # Blog queries
+    blogCategories: [BlogCategory!]!
     blogs(take: Int = 10, skip: Int = 0, orderBy: OrderByInput, filter: BlogFilterInput): [Blog]
 
     blog(id: ID, slug: String): Blog

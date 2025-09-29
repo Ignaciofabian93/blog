@@ -4,7 +4,7 @@ export enum BlogStatus {
   ARCHIVED = "ARCHIVED",
 }
 
-export enum BlogCategory {
+export enum BlogCategoryType {
   RECYCLING = "Reciclaje",
   POLLUTION = "Contaminación",
   SUSTAINABILITY = "Sostenibilidad",
@@ -19,6 +19,11 @@ export enum BlogCategory {
   SUSTAINABLE_LIVING = "Vida Sustentable",
   OTHER = "Otros",
 }
+
+export type BlogCategory = {
+  id: number;
+  name: string;
+};
 
 export type Blog = {
   id: number;
