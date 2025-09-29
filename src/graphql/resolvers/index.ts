@@ -1,22 +1,16 @@
-import { ProductResolver } from "./products";
+import { BlogResolver } from "./blogs";
 
 export const resolvers = {
   Query: {
-    ...ProductResolver.Query,
+    ...BlogResolver.Query,
   },
   Mutation: {
-    ...ProductResolver.Mutation,
+    ...BlogResolver.Mutation,
   },
-  Product: {
-    __resolveReference: ProductResolver.Product.__resolveReference,
+  Blog: {
+    __resolveReference: BlogResolver.Blog.__resolveReference,
   },
-  ProductCategory: {
-    __resolveReference: ProductResolver.ProductCategory.__resolveReference,
-  },
-  DepartmentCategory: {
-    __resolveReference: ProductResolver.DepartmentCategory.__resolveReference,
-  },
-  Department: {
-    __resolveReference: ProductResolver.Department.__resolveReference,
+  Admin: {
+    __resolveReference: BlogResolver.Admin.__resolveReference,
   },
 };

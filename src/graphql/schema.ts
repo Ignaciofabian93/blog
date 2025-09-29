@@ -3,209 +3,86 @@ import gql from "graphql-tag";
 export const typeDefs = gql`
   extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@shareable", "@external"])
 
-  # Federated enums from users subgraph
-  enum AccountType {
-    FREE
-    PLUS
-    PREMIUM
-  }
-
-  enum SellerType {
-    PERSON
-    STORE
-    SERVICE
-  }
-
-  enum ContactMethod {
-    EMAIL
-    WHATSAPP
-    PHONE
-    INSTAGRAM
-    FACEBOOK
-    WEBSITE
-    TIKTOK
-  }
-
-  # Federated user type
+  # Federated user type from users subgraph
   extend type User @key(fields: "id") {
     id: ID! @external
   }
 
-  enum Scope {
-    MARKET
-    STORE
+  # Blog-specific enums
+  enum BlogStatus {
+    DRAFT
+    PUBLISHED
+    ARCHIVED
   }
 
-  enum Badge {
-    POPULAR
-    DISCOUNTED
-    WOMAN_OWNED
-    ECO_FRIENDLY
-    BEST_SELLER
-    TOP_RATED
-    COMMUNITY_FAVORITE
-    LIMITED_TIME_OFFER
-    FLASH_SALE
-    BEST_VALUE
-    HANDMADE
-    SUSTAINABLE
-    SUPPORTS_CAUSE
-    FAMILY_BUSINESS
-    CHARITY_SUPPORT
-    LIMITED_STOCK
-    SEASONAL
-    FREE_SHIPPING
-    NEW
-    USED
-    SLIGHT_DAMAGE
-    WORN
-    FOR_REPAIR
-    REFURBISHED
-    EXCHANGEABLE
-    LAST_PRICE
-    FOR_GIFT
-    OPEN_TO_OFFERS
-    OPEN_BOX
-    CRUELTY_FREE
-    DELIVERED_TO_HOME
-    IN_HOUSE_PICKUP
-    IN_MID_POINT_PICKUP
+  enum BlogCategory {
+    RECYCLING
+    POLLUTION
+    SUSTAINABILITY
+    CIRCULAR_ECONOMY
+    USED_PRODUCTS
+    REUSE
+    ENVIRONMENT
+    UPCYCLING
+    RESPONSIBLE_CONSUMPTION
+    ECO_TIPS
+    ENVIRONMENTAL_IMPACT
+    SUSTAINABLE_LIVING
+    OTHER
   }
 
-  enum ProductSize {
-    XS
-    S
-    M
-    L
-    XL
-  }
-
-  enum WeightUnit {
-    KG
-    LB
-    OZ
-    G
-  }
-
-  # Remove local User extension, now federated above
-
-  type MaterialImpactEstimate @key(fields: "id") {
+  # Admin type for blog authoring
+  type Admin @key(fields: "id") {
     id: ID!
-    materialType: String!
-    estimatedCo2SavingsKG: Float
-    estimatedWaterSavingsLT: Float
-    firstMaterialTypeFor: [ProductCategory]
-    secondMaterialTypeFor: [ProductCategory]
-    thirdMaterialTypeFor: [ProductCategory]
-    fourthMaterialTypeFor: [ProductCategory]
-    fifthMaterialTypeFor: [ProductCategory]
+    email: String!
+    name: String!
+    createdAt: DateTime!
+    updatedAt: DateTime!
   }
 
-  type ProductCategory @key(fields: "id") {
-    id: ID!
-    productCategoryName: String!
-    departmentCategoryId: Int!
-    departmentCategory: DepartmentCategory
-    keywords: [String]
-    averageWeight: Float
-    firstMaterialTypeId: Int
-    firstMaterialTypeQuantity: Float
-    secondMaterialTypeId: Int
-    secondMaterialTypeQuantity: Float
-    thirdMaterialTypeId: Int
-    thirdMaterialTypeQuantity: Float
-    fourthMaterialTypeId: Int
-    fourthMaterialTypeQuantity: Float
-    fifthMaterialTypeId: Int
-    fifthMaterialTypeQuantity: Float
-    size: ProductSize
-    weightUnit: WeightUnit
-    products: [Product]
-    firstMaterialType: MaterialImpactEstimate
-    secondMaterialType: MaterialImpactEstimate
-    thirdMaterialType: MaterialImpactEstimate
-    fourthMaterialType: MaterialImpactEstimate
-    fifthMaterialType: MaterialImpactEstimate
-  }
-
-  type DepartmentCategory @key(fields: "id") {
-    id: ID!
-    departmentCategoryName: String!
-    departmentId: Int!
-    department: Department
-    productCategories: [ProductCategory]
-  }
-
-  type Department @key(fields: "id") {
-    id: ID!
-    departmentName: String!
-    departmentImage: String
-    departmentCategories: [DepartmentCategory]
-  }
-
-  scalar DateTime
-  scalar JSON
-
-  type ProductLike {
-    id: ID!
-    userId: String!
-    user: User # Add federated user reference for likes
-  }
-
-  type ProductComment {
+  type BlogComment {
     id: ID!
     comment: String!
     userId: String!
     user: User # Federated user reference
+    createdAt: DateTime!
   }
 
-  type Product @key(fields: "id") {
+  type BlogLike {
     id: ID!
-    sku: String
-    barcode: String
-    color: String
-    brand: String
-    name: String!
-    description: String!
-    price: Int!
-    images: [String]
-    hasOffer: Boolean
-    offerPrice: Int
-    stock: Int!
-    isExchangeable: Boolean
-    interests: [String]
-    isActive: Boolean
-    ratings: Float
-    ratingCount: Int
-    reviewsNumber: Int
-    badges: [Badge]
-    createdAt: DateTime!
-    updatedAt: DateTime!
-    productCategoryId: Int!
-    productCategory: ProductCategory
     userId: String!
     user: User # Federated user reference
-    comments: [ProductComment]
-    likes: [ProductLike]
+    createdAt: DateTime!
   }
 
-  type Co2ImpactMessage {
+  type Blog @key(fields: "id") {
     id: ID!
-    min: Float
-    max: Float
-    message1: String
-    message2: String
-    message3: String
+    title: String!
+    content: String!
+    excerpt: String
+    slug: String!
+    category: BlogCategory!
+    status: BlogStatus!
+    featuredImage: String
+    images: [String]
+    tags: [String]
+    metaTitle: String
+    metaDescription: String
+    readingTime: Int
+    views: Int
+    publishedAt: DateTime
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    adminId: String!
+    admin: Admin # Reference to the admin who wrote the blog
+    comments: [BlogComment]
+    likes: [BlogLike]
+    likesCount: Int
+    commentsCount: Int
   }
 
-  type WaterImpactMessage {
-    id: ID!
-    min: Float
-    max: Float
-    message1: String
-    message2: String
-    message3: String
-  }
+  scalar DateTime
+  scalar JSON
 
   enum SortDirection {
     asc
@@ -217,57 +94,69 @@ export const typeDefs = gql`
     direction: SortDirection!
   }
 
+  input BlogFilterInput {
+    category: BlogCategory
+    status: BlogStatus
+    adminId: String
+    search: String
+  }
+
   extend type Query {
-    marketCatalog: [Department]
+    # Blog queries
+    blogs(take: Int = 10, skip: Int = 0, orderBy: OrderByInput, filter: BlogFilterInput): [Blog]
+
+    blog(id: ID, slug: String): Blog
+
+    blogsByCategory(category: BlogCategory!, take: Int = 10, skip: Int = 0): [Blog]
+
+    popularBlogs(take: Int = 10): [Blog]
+
+    recentBlogs(take: Int = 10): [Blog]
+
+    blogsByAdmin(adminId: String!, take: Int = 10, skip: Int = 0): [Blog]
   }
 
   extend type Mutation {
-    addProduct(
-      sku: String
-      barcode: String
-      color: String
-      brand: String
-      name: String!
-      description: String!
-      price: Int!
+    # Blog mutations (admin only)
+    createBlog(
+      title: String!
+      content: String!
+      excerpt: String
+      slug: String!
+      category: BlogCategory!
+      status: BlogStatus = DRAFT
+      featuredImage: String
       images: [String]
-      hasOffer: Boolean
-      offerPrice: Int
-      stock: Int!
-      isExchangeable: Boolean
-      interests: [String]
-      isActive: Boolean
-      ratings: Float
-      ratingCount: Int
-      reviewsNumber: Int
-      badges: [Badge]
-      productCategoryId: Int!
-      userId: String!
-    ): Product
-    updateProduct(
+      tags: [String]
+      metaTitle: String
+      metaDescription: String
+      adminId: String!
+    ): Blog
+
+    updateBlog(
       id: ID!
-      sku: String
-      barcode: String
-      color: String
-      brand: String
-      name: String!
-      description: String!
-      price: Int!
+      title: String
+      content: String
+      excerpt: String
+      slug: String
+      category: BlogCategory
+      status: BlogStatus
+      featuredImage: String
       images: [String]
-      hasOffer: Boolean
-      offerPrice: Int
-      stock: Int!
-      isExchangeable: Boolean
-      interests: [String]
-      isActive: Boolean
-      ratings: Float
-      ratingCount: Int
-      reviewsNumber: Int
-      badges: [Badge]
-      productCategoryId: Int!
-      userId: String!
-    ): Product
-    deleteProduct(id: ID!): Product
-    likeProduct(id: ID!, userId: ID!): Product
+      tags: [String]
+      metaTitle: String
+      metaDescription: String
+    ): Blog
+
+    deleteBlog(id: ID!): Blog
+
+    publishBlog(id: ID!): Blog
+
+    unpublishBlog(id: ID!): Blog
+
+    # Blog interactions (users)
+    likeBlog(id: ID!, userId: String!): Blog
+
+    commentOnBlog(blogId: ID!, userId: String!, comment: String!): BlogComment
   }
 `;

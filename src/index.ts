@@ -39,12 +39,12 @@ app.use(
 );
 
 app.get("/", (req, res) => {
-  res.send("Product's subgraph is running");
+  res.send("Blog's subgraph is running");
 });
 
-const PORT = process.env.PORT || 9002;
+const PORT = process.env.PORT || 9005;
 
 app.listen(PORT, () => {
   // eslint-disable-next-line no-console
-  console.log(`Product's subgraph is running on port ${PORT}`);
+  console.log(`Blog's subgraph is running on port ${PORT}`);
 });
