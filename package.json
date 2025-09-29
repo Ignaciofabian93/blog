@@ -1,46 +1,93 @@
 {
-  "name": "blog",
+  "name": "@ekoru/blog-service",
   "version": "1.0.0",
+  "description": "GraphQL blog service for EKORU - sustainable ecommerce platform for recycled and used products, community events, and educational content",
   "main": "./dist/index.js",
   "type": "module",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "prisma/schema.prisma"
+  ],
+  "private": true,
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node ./dist/index.js",
     "dev": "tsx watch src/index.ts",
-    "build": "tsc && tsc-alias"
+    "build": "npm run clean && tsc && tsc-alias",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.js",
+    "lint:fix": "eslint src --ext .ts,.js --fix",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:watch": "npm test -- --watch",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "db:seed": "tsx src/scripts/seedDepartments.ts"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": [
+    "blog",
+    "graphql",
+    "apollo",
+    "ecommerce",
+    "sustainability",
+    "recycling",
+    "community",
+    "typescript",
+    "prisma",
+    "ekoru"
+  ],
+  "author": {
+    "name": "Ignacio Rodríguez Rulas",
+    "email": "ignaciorodriguez@ekoru.com"
+  },
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ignaciofabian93/blog.git"
+  },
+  "homepage": "https://ekoru.com",
+  "bugs": {
+    "url": "https://github.com/Ignaciofabian93/blog/issues"
+  },
   "dependencies": {
-    "@apollo/server": "^4.11.3",
-    "@apollo/subgraph": "^2.10.0",
-    "@prisma/client": "^6.5.0",
-    "cors": "^2.8.5",
-    "express": "^5.1.0",
-    "graphql": "^16.10.0",
-    "graphql-tag": "^2.12.6",
-    "jsonwebtoken": "^9.0.2",
-    "tsx": "^4.19.3"
+    "@apollo/server": "4.11.3",
+    "@apollo/subgraph": "2.10.0",
+    "@prisma/client": "6.5.0",
+    "cors": "2.8.5",
+    "express": "5.1.0",
+    "graphql": "16.10.0",
+    "graphql-tag": "2.12.6",
+    "jsonwebtoken": "9.0.2",
+    "tsx": "4.19.3"
   },
   "devDependencies": {
-    "@eslint/js": "^9.24.0",
-    "@types/bcrypt": "^5.0.2",
-    "@types/cors": "^2.8.17",
-    "@types/jsonwebtoken": "^9.0.9",
-    "@types/multer": "^2.0.0",
-    "@typescript-eslint/eslint-plugin": "^8.30.1",
-    "@typescript-eslint/parser": "^8.30.1",
-    "eslint": "^9.24.0",
-    "eslint-config-prettier": "^10.1.2",
-    "eslint-plugin-import": "^2.31.0",
-    "eslint-plugin-prettier": "^5.2.6",
-    "eslint-plugin-simple-import-sort": "^12.1.1",
-    "eslint-plugin-unused-imports": "^4.1.4",
-    "globals": "^16.0.0",
-    "prisma": "^6.5.0",
-    "tsc-alias": "^1.8.15",
-    "typescript-eslint": "^8.30.1"
+    "@eslint/js": "9.24.0",
+    "@types/bcrypt": "5.0.2",
+    "@types/cors": "2.8.17",
+    "@types/express": "4.17.21",
+    "@types/jsonwebtoken": "9.0.9",
+    "@types/multer": "2.0.0",
+    "@types/node": "20.0.0",
+    "@typescript-eslint/eslint-plugin": "8.30.1",
+    "@typescript-eslint/parser": "8.30.1",
+    "eslint": "9.24.0",
+    "eslint-config-prettier": "10.1.2",
+    "eslint-plugin-import": "2.31.0",
+    "eslint-plugin-prettier": "5.2.6",
+    "eslint-plugin-simple-import-sort": "12.1.1",
+    "eslint-plugin-unused-imports": "4.1.4",
+    "globals": "16.0.0",
+    "prisma": "6.5.0",
+    "tsc-alias": "1.8.15",
+    "typescript": "5.0.0",
+    "typescript-eslint": "8.30.1"
   }
 }
