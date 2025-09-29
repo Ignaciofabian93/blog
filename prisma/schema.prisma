@@ -308,46 +308,50 @@ model ProductVariant {
 }
 
 model Seller {
-  id                                     String           @id
-  email                                  String           @unique
+  id                                     String                 @id
+  email                                  String                 @unique
   password                               String
   sellerType                             SellerType
-  isActive                               Boolean          @default(true)
-  isVerified                             Boolean          @default(false)
-  createdAt                              DateTime         @default(now())
+  isActive                               Boolean                @default(true)
+  isVerified                             Boolean                @default(false)
+  createdAt                              DateTime               @default(now())
   updatedAt                              DateTime
-  address                                String?          @default("")
+  address                                String?                @default("")
   cityId                                 Int?
   countryId                              Int?
   countyId                               Int?
   regionId                               Int?
-  phone                                  String?          @default("")
+  phone                                  String?                @default("")
   website                                String?
-  preferredContactMethod                 ContactMethod?   @default(WHATSAPP)
+  preferredContactMethod                 ContactMethod?         @default(WHATSAPP)
   socialMediaLinks                       Json?
-  accountType                            AccountType?     @default(FREE)
-  points                                 Int?             @default(0)
+  accountType                            AccountType?           @default(FREE)
+  points                                 Int?                   @default(0)
   sellerCategoryId                       Int?
-  receivedChats                          Chat[]           @relation("ChatReceiver")
-  sentChats                              Chat[]           @relation("ChatSender")
-  matchesReceived                        Match[]          @relation("MatchReceiver")
-  matchesSent                            Match[]          @relation("MatchSender")
+  receivedChats                          Chat[]                 @relation("ChatReceiver")
+  sentChats                              Chat[]                 @relation("ChatSender")
+  ChileanPaymentConfig                   ChileanPaymentConfig[]
+  matchesReceived                        Match[]                @relation("MatchReceiver")
+  matchesSent                            Match[]                @relation("MatchSender")
   messages                               Message[]
   Notification                           Notification[]
   Order                                  Order[]
-  Payment_Payment_payerIdToSeller        Payment[]        @relation("Payment_payerIdToSeller")
-  Payment_Payment_receiverIdToSeller     Payment[]        @relation("Payment_receiverIdToSeller")
+  Payment_Payment_payerIdToSeller        Payment[]              @relation("Payment_payerIdToSeller")
+  Payment_Payment_receiverIdToSeller     Payment[]              @relation("Payment_receiverIdToSeller")
+  PaymentMethodBank                      PaymentMethodBank[]
+  PaymentMethodCard                      PaymentMethodCard[]
   PersonProfile                          PersonProfile?
   Product                                Product[]
   ProductComment                         ProductComment[]
   ProductLike                            ProductLike[]
-  Quotation_Quotation_clientIdToSeller   Quotation[]      @relation("Quotation_clientIdToSeller")
-  Quotation_Quotation_providerIdToSeller Quotation[]      @relation("Quotation_providerIdToSeller")
-  City                                   City?            @relation(fields: [cityId], references: [id])
-  Country                                Country?         @relation(fields: [countryId], references: [id])
-  County                                 County?          @relation(fields: [countyId], references: [id])
-  Region                                 Region?          @relation(fields: [regionId], references: [id])
-  SellerCategory                         SellerCategory?  @relation(fields: [sellerCategoryId], references: [id])
+  Quotation_Quotation_clientIdToSeller   Quotation[]            @relation("Quotation_clientIdToSeller")
+  Quotation_Quotation_providerIdToSeller Quotation[]            @relation("Quotation_providerIdToSeller")
+  City                                   City?                  @relation(fields: [cityId], references: [id])
+  Country                                Country?               @relation(fields: [countryId], references: [id])
+  County                                 County?                @relation(fields: [countyId], references: [id])
+  Region                                 Region?                @relation(fields: [regionId], references: [id])
+  SellerCategory                         SellerCategory?        @relation(fields: [sellerCategoryId], references: [id])
+  SellerPreferences                      SellerPreferences?
   Service                                Service[]
   ServiceProfile                         ServiceProfile?
   ServiceReview                          ServiceReview[]
@@ -374,7 +378,7 @@ model SellerCategory {
 model StoreProfile {
   id                   String  @id
   sellerId             String  @unique
-  businessName         String
+  businessName         String?
   displayName          String?
   description          String?
   logo                 String?
@@ -424,30 +428,36 @@ model NotificationTemplate {
 }
 
 model Payment {
-  id                                Int                  @id @default(autoincrement())
+  id                                Int                   @id @default(autoincrement())
   orderId                           Int?
   quotationId                       Int?
   amount                            Float
-  currency                          String               @default("USD")
-  status                            PaymentStatus        @default(PENDING)
+  currency                          String                @default("USD")
+  status                            PaymentStatus         @default(PENDING)
   paymentMethod                     PaymentMethod
   paymentProvider                   String?
   externalId                        String?
   description                       String?
-  fees                              Float?               @default(0)
+  fees                              Float?                @default(0)
   netAmount                         Float?
   payerId                           String
   receiverId                        String
   failureReason                     String?
   metadata                          Json?
-  createdAt                         DateTime             @default(now())
+  createdAt                         DateTime              @default(now())
   updatedAt                         DateTime
   processedAt                       DateTime?
   refundedAt                        DateTime?
-  Order                             Order?               @relation(fields: [orderId], references: [id])
-  Seller_Payment_payerIdToSeller    Seller               @relation("Payment_payerIdToSeller", fields: [payerId], references: [id])
-  Quotation                         Quotation?           @relation(fields: [quotationId], references: [id])
-  Seller_Payment_receiverIdToSeller Seller               @relation("Payment_receiverIdToSeller", fields: [receiverId], references: [id])
+  bankMethodId                      Int?
+  cardMethodId                      Int?
+  chileanConfigId                   Int?
+  PaymentMethodBank                 PaymentMethodBank?    @relation(fields: [bankMethodId], references: [id])
+  PaymentMethodCard                 PaymentMethodCard?    @relation(fields: [cardMethodId], references: [id])
+  ChileanPaymentConfig              ChileanPaymentConfig? @relation(fields: [chileanConfigId], references: [id])
+  Order                             Order?                @relation(fields: [orderId], references: [id])
+  Seller_Payment_payerIdToSeller    Seller                @relation("Payment_payerIdToSeller", fields: [payerId], references: [id])
+  Quotation                         Quotation?            @relation(fields: [quotationId], references: [id])
+  Seller_Payment_receiverIdToSeller Seller                @relation("Payment_receiverIdToSeller", fields: [receiverId], references: [id])
   PaymentRefund                     PaymentRefund[]
   PaymentTransaction                PaymentTransaction[]
   PaymentWebhook                    PaymentWebhook[]
@@ -573,7 +583,7 @@ model ServiceCategory {
 model ServiceProfile {
   id                   String   @id
   sellerId             String   @unique
-  businessName         String
+  businessName         String?
   displayName          String?
   description          String?
   logo                 String?
@@ -604,6 +614,89 @@ model ServiceReview {
   createdAt  DateTime @default(now())
   Seller     Seller   @relation(fields: [reviewerId], references: [id])
   Service    Service  @relation(fields: [serviceId], references: [id])
+}
+
+model ChileanPaymentConfig {
+  id          Int                @id @default(autoincrement())
+  sellerId    String
+  provider    String
+  merchantId  String?
+  apiKey      String?
+  secretKey   String?
+  environment PaymentEnvironment @default(SANDBOX)
+  isActive    Boolean            @default(true)
+  webhookUrl  String?
+  returnUrl   String?
+  cancelUrl   String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime
+  Seller      Seller             @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  Payment     Payment[]
+
+  @@unique([sellerId, provider])
+  @@index([provider])
+  @@index([sellerId])
+}
+
+model PaymentMethodBank {
+  id                Int             @id @default(autoincrement())
+  sellerId          String
+  provider          String
+  providerToken     String
+  accountLast4      String
+  bankName          String?
+  accountType       BankAccountType @default(CHECKING)
+  accountHolderName String?
+  isDefault         Boolean         @default(false)
+  isActive          Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime
+  Payment           Payment[]
+  Seller            Seller          @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@unique([sellerId, providerToken])
+  @@index([sellerId])
+}
+
+model PaymentMethodCard {
+  id             Int       @id @default(autoincrement())
+  sellerId       String
+  providerToken  String
+  provider       String
+  cardLast4      String
+  cardBrand      String
+  cardType       CardType  @default(CREDIT)
+  expiryMonth    Int
+  expiryYear     Int
+  cardholderName String?
+  isDefault      Boolean   @default(false)
+  isActive       Boolean   @default(true)
+  billingAddress Json?
+  fingerprint    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime
+  Payment        Payment[]
+  Seller         Seller    @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@unique([sellerId, providerToken])
+  @@index([isDefault])
+  @@index([provider])
+  @@index([sellerId])
+}
+
+model SellerPreferences {
+  id                 Int     @id @default(autoincrement())
+  sellerId           String  @unique
+  preferredLanguage  String? @default("es")
+  currency           String? @default("CLP")
+  emailNotifications Boolean @default(true)
+  pushNotifications  Boolean @default(true)
+  orderUpdates       Boolean @default(true)
+  communityUpdates   Boolean @default(true)
+  securityAlerts     Boolean @default(true)
+  weeklySummary      Boolean @default(false)
+  twoFactorAuth      Boolean @default(false)
+  Seller             Seller  @relation(fields: [sellerId], references: [id], onDelete: Cascade)
 }
 
 enum AccountType {
@@ -751,6 +844,13 @@ enum PaymentMethod {
   STRIPE
   CASH_ON_DELIVERY
   CRYPTOCURRENCY
+  KHIPU
+  WEBPAY
+  MERCADO_PAGO
+  TRANSBANK
+  FLOW
+  ONECLICK
+  REDCOMPRA
 }
 
 enum PaymentStatus {
@@ -785,4 +885,21 @@ enum ServicePricing {
   QUOTATION
   HOURLY
   PACKAGE
+}
+
+enum BankAccountType {
+  CHECKING
+  SAVINGS
+  BUSINESS
+}
+
+enum CardType {
+  CREDIT
+  DEBIT
+  PREPAID
+}
+
+enum PaymentEnvironment {
+  SANDBOX
+  PRODUCTION
 }
