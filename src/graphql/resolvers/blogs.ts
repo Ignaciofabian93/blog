@@ -1,32 +1,24 @@
 import { type OrderBy } from "../../types/general";
-import { type BlogCategory, type BlogStatus } from "../../types/blog";
 import { BlogService } from "../services/blog";
 import { AdminService } from "../services/admin";
+import { type BlogCategoryEnum } from "../../types/blog";
 
-type singleArgs = { id: string | number; take?: number; skip?: number; orderBy?: OrderBy };
+type singleArgs = { id: number; take?: number; skip?: number; orderBy?: OrderBy };
 type blogFilterArgs = {
   take?: number;
   skip?: number;
   orderBy?: OrderBy;
-  filter?: {
-    category?: BlogCategory;
-    status?: BlogStatus;
-    adminId?: string;
-    search?: string;
-  };
 };
 
 export const BlogResolver = {
   Query: {
     blogCategories: () => BlogService.getBlogCategories(),
     blogs: (_parent: unknown, args: blogFilterArgs) => BlogService.getBlogs(args),
-    // blog: (_parent: unknown, args: { id?: string; slug?: string }) => BlogService.getBlog(args),
-    // blogsByCategory: (_parent: unknown, args: { category: BlogCategory; take?: number; skip?: number }) =>
-    //   BlogService.getBlogsByCategory(args),
-    // popularBlogs: (_parent: unknown, args: { take?: number }) => BlogService.getPopularBlogs(args),
-    // recentBlogs: (_parent: unknown, args: { take?: number }) => BlogService.getRecentBlogs(args),
-    // blogsByAdmin: (_parent: unknown, args: { adminId: string; take?: number; skip?: number }) =>
-    //   BlogService.getBlogsByAdmin(args),
+    blog: (_parent: unknown, args: { id: number }) => BlogService.getBlog(args),
+    blogsByCategory: (_parent: unknown, args: { category: BlogCategoryEnum; take?: number; skip?: number }) =>
+      BlogService.getBlogsByCategory(args),
+    blogsByAuthor: (_parent: unknown, args: { authorId: string; take?: number; skip?: number }) =>
+      BlogService.getBlogsByAuthor(args),
   },
   Mutation: {
     createBlog: (
@@ -57,7 +49,7 @@ export const BlogResolver = {
     //   BlogService.addComment(args),
   },
   Blog: {
-    __resolveReference: (reference: singleArgs) => BlogService.getBlog({ id: reference.id.toString() }),
+    __resolveReference: (reference: singleArgs) => BlogService.getBlog({ id: reference.id }),
   },
   Admin: {
     __resolveReference: (reference: singleArgs) => AdminService.getAdmin({ id: reference.id.toString() }),

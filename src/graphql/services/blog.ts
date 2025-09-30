@@ -1,9 +1,45 @@
 import prisma from "../../client/prisma";
 import { ErrorService } from "../../errors/errors";
-import { type BlogCategory } from "../../types/blog";
+import { type BlogCategory, BlogCategoryEnum } from "../../types/blog";
 
 type OrderBy = { field: string; direction: "asc" | "desc" };
 type Where = { [key: string]: string | number | boolean | null };
+
+type PrismaBlogCategoryType =
+  | "RECYCLING"
+  | "POLLUTION"
+  | "SUSTAINABILITY"
+  | "CIRCULAR_ECONOMY"
+  | "USED_PRODUCTS"
+  | "REUSE"
+  | "ENVIRONMENT"
+  | "UPCYCLING"
+  | "RESPONSIBLE_CONSUMPTION"
+  | "ECO_TIPS"
+  | "ENVIRONMENTAL_IMPACT"
+  | "SUSTAINABLE_LIVING"
+  | "OTHER";
+
+// Map numeric enum to Prisma string enum
+const mapCategoryToPrisma = (category: BlogCategoryEnum): PrismaBlogCategoryType => {
+  const categoryMap: Record<BlogCategoryEnum, PrismaBlogCategoryType> = {
+    [BlogCategoryEnum.RECYCLING]: "RECYCLING",
+    [BlogCategoryEnum.POLLUTION]: "POLLUTION",
+    [BlogCategoryEnum.SUSTAINABILITY]: "SUSTAINABILITY",
+    [BlogCategoryEnum.CIRCULAR_ECONOMY]: "CIRCULAR_ECONOMY",
+    [BlogCategoryEnum.USED_PRODUCTS]: "USED_PRODUCTS",
+    [BlogCategoryEnum.REUSE]: "REUSE",
+    [BlogCategoryEnum.ENVIRONMENT]: "ENVIRONMENT",
+    [BlogCategoryEnum.UPCYCLING]: "UPCYCLING",
+    [BlogCategoryEnum.RESPONSIBLE_CONSUMPTION]: "RESPONSIBLE_CONSUMPTION",
+    [BlogCategoryEnum.ECO_TIPS]: "ECO_TIPS",
+    [BlogCategoryEnum.ENVIRONMENTAL_IMPACT]: "ENVIRONMENTAL_IMPACT",
+    [BlogCategoryEnum.SUSTAINABLE_LIVING]: "SUSTAINABLE_LIVING",
+    [BlogCategoryEnum.OTHER]: "OTHER",
+  };
+
+  return categoryMap[category];
+};
 
 export const BlogService = {
   getBlogCategories: async () => {
@@ -48,20 +84,14 @@ export const BlogService = {
     }
   },
 
-  getBlog: async ({ id, slug }: { id?: string; slug?: string }) => {
+  getBlog: async ({ id }: { id: number }) => {
     try {
-      if (!id && !slug) {
-        throw new ErrorService.BadRequestError("Se requiere un ID o slug");
+      if (!id) {
+        throw new ErrorService.BadRequestError("Se requiere un ID de blog válido");
       }
-
-      const where: Where = {};
-      if (id) {
-        where.id = parseInt(id);
-      }
-      // Note: slug is not available in current BlogPost model
 
       const blog = await prisma.blogPost.findFirst({
-        where,
+        where: { id },
         include: {
           Admin: {
             select: {
@@ -84,130 +114,74 @@ export const BlogService = {
     }
   },
 
-  // getBlogsByCategory: async ({
-  //   category,
-  //   take = 10,
-  //   skip = 0,
-  // }: {
-  //   category: BlogCategory;
-  //   take?: number;
-  //   skip?: number;
-  // }) => {
-  //   try {
-  //     // Note: category field is not available in current BlogPost model
-  //     // For now, we'll return published blogs
-  //     const blogs = await prisma.blogPost.findMany({
-  //       where: {
-  //         isPublished: true,
-  //       },
-  //       include: {
-  //         Admin: {
-  //           select: {
-  //             id: true,
-  //             name: true,
-  //             email: true,
-  //           },
-  //         },
-  //       },
-  //       orderBy: {
-  //         publishedAt: "desc",
-  //       },
-  //       take,
-  //       skip,
-  //     });
+  getBlogsByCategory: async ({
+    category,
+    take = 10,
+    skip = 0,
+  }: {
+    category: BlogCategoryEnum;
+    take?: number;
+    skip?: number;
+  }) => {
+    try {
+      const prismaCategory = mapCategoryToPrisma(category);
 
-  //     return blogs;
-  //   } catch (error) {
-  //     console.error("Error getting blogs by category:", error);
-  //     throw new ErrorService.InternalServerError("Error al obtener los blogs por categoría");
-  //   }
-  // },
+      const blogs = await prisma.blogPost.findMany({
+        where: {
+          isPublished: true,
+          category: prismaCategory,
+        },
+        include: {
+          Admin: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: {
+          publishedAt: "desc",
+        },
+        take,
+        skip,
+      });
 
-  // getPopularBlogs: async ({ take = 10 }: { take?: number }) => {
-  //   try {
-  //     // Since there's no likes/views field, we'll order by most recent published
-  //     const blogs = await prisma.blogPost.findMany({
-  //       where: {
-  //         isPublished: true,
-  //       },
-  //       include: {
-  //         Admin: {
-  //           select: {
-  //             id: true,
-  //             name: true,
-  //             email: true,
-  //           },
-  //         },
-  //       },
-  //       orderBy: {
-  //         publishedAt: "desc",
-  //       },
-  //       take,
-  //     });
+      return blogs;
+    } catch (error) {
+      console.error("Error getting blogs by category:", error);
+      throw new ErrorService.InternalServerError("Error al obtener los blogs por categoría");
+    }
+  },
 
-  //     return blogs;
-  //   } catch (error) {
-  //     console.error("Error getting popular blogs:", error);
-  //     throw new ErrorService.InternalServerError("Error al obtener los blogs populares");
-  //   }
-  // },
+  getBlogsByAuthor: async ({ authorId, take = 10, skip = 0 }: { authorId: string; take?: number; skip?: number }) => {
+    try {
+      const blogs = await prisma.blogPost.findMany({
+        where: {
+          authorId,
+        },
+        include: {
+          Admin: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        take,
+        skip,
+      });
 
-  // getRecentBlogs: async ({ take = 10 }: { take?: number }) => {
-  //   try {
-  //     const blogs = await prisma.blogPost.findMany({
-  //       where: {
-  //         isPublished: true,
-  //       },
-  //       include: {
-  //         Admin: {
-  //           select: {
-  //             id: true,
-  //             name: true,
-  //             email: true,
-  //           },
-  //         },
-  //       },
-  //       orderBy: {
-  //         publishedAt: "desc",
-  //       },
-  //       take,
-  //     });
-
-  //     return blogs;
-  //   } catch (error) {
-  //     console.error("Error getting recent blogs:", error);
-  //     throw new ErrorService.InternalServerError("Error al obtener los blogs recientes");
-  //   }
-  // },
-
-  // getBlogsByAdmin: async ({ adminId, take = 10, skip = 0 }: { adminId: string; take?: number; skip?: number }) => {
-  //   try {
-  //     const blogs = await prisma.blogPost.findMany({
-  //       where: {
-  //         authorId: adminId,
-  //       },
-  //       include: {
-  //         Admin: {
-  //           select: {
-  //             id: true,
-  //             name: true,
-  //             email: true,
-  //           },
-  //         },
-  //       },
-  //       orderBy: {
-  //         createdAt: "desc",
-  //       },
-  //       take,
-  //       skip,
-  //     });
-
-  //     return blogs;
-  //   } catch (error) {
-  //     console.error("Error getting blogs by admin:", error);
-  //     throw new ErrorService.InternalServerError("Error al obtener los blogs del administrador");
-  //   }
-  // },
+      return blogs;
+    } catch (error) {
+      console.error("Error getting blogs by admin:", error);
+      throw new ErrorService.InternalServerError("Error al obtener los blogs del administrador");
+    }
+  },
 
   createBlog: async (blogData: {
     title: string;

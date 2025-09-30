@@ -38,6 +38,7 @@ export const typeDefs = gql`
   type BlogCategory {
     id: ID!
     name: String!
+    icon: String
   }
 
   type BlogComment {
@@ -94,27 +95,17 @@ export const typeDefs = gql`
     direction: SortDirection!
   }
 
-  input BlogFilterInput {
-    category: BlogCategoryType
-    status: BlogStatus
-    adminId: String
-    search: String
-  }
-
   extend type Query {
     # Blog queries
     blogCategories: [BlogCategory!]!
-    blogs(take: Int = 10, skip: Int = 0, orderBy: OrderByInput, filter: BlogFilterInput): [Blog]
 
-    blog(id: ID, slug: String): Blog
+    blogs(take: Int = 10, skip: Int = 0, orderBy: OrderByInput): [Blog]
+
+    blog(id: ID!): Blog
 
     blogsByCategory(category: BlogCategoryType!, take: Int = 10, skip: Int = 0): [Blog]
 
-    popularBlogs(take: Int = 10): [Blog]
-
-    recentBlogs(take: Int = 10): [Blog]
-
-    blogsByAdmin(adminId: String!, take: Int = 10, skip: Int = 0): [Blog]
+    blogsByAuthor(authorId: String!, take: Int = 10, skip: Int = 0): [Blog]
   }
 
   extend type Mutation {

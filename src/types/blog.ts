@@ -4,6 +4,22 @@ export enum BlogStatus {
   ARCHIVED = "ARCHIVED",
 }
 
+export enum BlogCategoryEnum {
+  RECYCLING,
+  POLLUTION,
+  SUSTAINABILITY,
+  CIRCULAR_ECONOMY,
+  USED_PRODUCTS,
+  REUSE,
+  ENVIRONMENT,
+  UPCYCLING,
+  RESPONSIBLE_CONSUMPTION,
+  ECO_TIPS,
+  ENVIRONMENTAL_IMPACT,
+  SUSTAINABLE_LIVING,
+  OTHER,
+}
+
 export enum BlogCategoryType {
   RECYCLING = "Reciclaje",
   POLLUTION = "Contaminación",
@@ -23,6 +39,7 @@ export enum BlogCategoryType {
 export type BlogCategory = {
   id: number;
   name: string;
+  icon?: string | null;
 };
 
 export type Blog = {
