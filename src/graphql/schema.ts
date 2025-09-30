@@ -19,7 +19,7 @@ export const typeDefs = gql`
     ARCHIVED
   }
 
-  enum BlogCategory {
+  enum BlogCategoryType {
     RECYCLING
     POLLUTION
     SUSTAINABILITY
@@ -33,6 +33,11 @@ export const typeDefs = gql`
     ENVIRONMENTAL_IMPACT
     SUSTAINABLE_LIVING
     OTHER
+  }
+
+  type BlogCategory {
+    id: ID!
+    name: String!
   }
 
   type BlogComment {
@@ -56,7 +61,7 @@ export const typeDefs = gql`
     content: String!
     excerpt: String
     slug: String!
-    category: BlogCategory!
+    category: BlogCategoryType!
     status: BlogStatus!
     featuredImage: String
     images: [String]
@@ -90,7 +95,7 @@ export const typeDefs = gql`
   }
 
   input BlogFilterInput {
-    category: BlogCategory
+    category: BlogCategoryType
     status: BlogStatus
     adminId: String
     search: String
@@ -103,7 +108,7 @@ export const typeDefs = gql`
 
     blog(id: ID, slug: String): Blog
 
-    blogsByCategory(category: BlogCategory!, take: Int = 10, skip: Int = 0): [Blog]
+    blogsByCategory(category: BlogCategoryType!, take: Int = 10, skip: Int = 0): [Blog]
 
     popularBlogs(take: Int = 10): [Blog]
 
@@ -119,7 +124,7 @@ export const typeDefs = gql`
       content: String!
       excerpt: String
       slug: String!
-      category: BlogCategory!
+      category: BlogCategoryType!
       status: BlogStatus = DRAFT
       featuredImage: String
       images: [String]
@@ -135,7 +140,7 @@ export const typeDefs = gql`
       content: String
       excerpt: String
       slug: String
-      category: BlogCategory
+      category: BlogCategoryType
       status: BlogStatus
       featuredImage: String
       images: [String]
