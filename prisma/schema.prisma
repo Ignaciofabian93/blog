@@ -725,10 +725,11 @@ model BlogPost {
 }
 
 model BlogCategory {
-  id       Int        @id @default(autoincrement())
-  name     String     @unique
-  icon     String?
-  BlogPost BlogPost[]
+  id          Int        @id @default(autoincrement())
+  name        String     @unique
+  icon        String?
+  description String?
+  BlogPost    BlogPost[]
 }
 
 model CommunityComment {

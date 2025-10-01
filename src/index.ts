@@ -45,6 +45,5 @@ app.get("/", (req, res) => {
 const PORT = process.env.PORT || 9005;
 
 app.listen(PORT, () => {
-  // eslint-disable-next-line no-console
   console.log(`Blog's subgraph is running on port ${PORT}`);
 });

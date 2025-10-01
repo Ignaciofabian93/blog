@@ -39,6 +39,8 @@ export const typeDefs = gql`
     id: ID!
     name: String!
     icon: String
+    description: String
+    blogs: [Blog]
   }
 
   type BlogComment {
