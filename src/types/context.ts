@@ -4,6 +4,7 @@ export type Context = {
   req: Request;
   res: Response;
   token?: string;
+  sellerId?: string;
 };
 
 export type ResolverFn<TParent = unknown, TArgs = Record<string, unknown>, TResult = unknown> = (

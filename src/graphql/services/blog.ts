@@ -1,78 +1,39 @@
 import prisma from "../../client/prisma";
 import { ErrorService } from "../../errors/errors";
-import { type BlogCategory, BlogCategoryEnum } from "../../types/blog";
-
-type OrderBy = { field: string; direction: "asc" | "desc" };
-type Where = { [key: string]: string | number | boolean | null };
-
-type PrismaBlogCategoryType =
-  | "RECYCLING"
-  | "POLLUTION"
-  | "SUSTAINABILITY"
-  | "CIRCULAR_ECONOMY"
-  | "USED_PRODUCTS"
-  | "REUSE"
-  | "ENVIRONMENT"
-  | "UPCYCLING"
-  | "RESPONSIBLE_CONSUMPTION"
-  | "ECO_TIPS"
-  | "ENVIRONMENTAL_IMPACT"
-  | "SUSTAINABLE_LIVING"
-  | "OTHER";
-
-// Map numeric enum to Prisma string enum
-const mapCategoryToPrisma = (category: BlogCategoryEnum): PrismaBlogCategoryType => {
-  const categoryMap: Record<BlogCategoryEnum, PrismaBlogCategoryType> = {
-    [BlogCategoryEnum.RECYCLING]: "RECYCLING",
-    [BlogCategoryEnum.POLLUTION]: "POLLUTION",
-    [BlogCategoryEnum.SUSTAINABILITY]: "SUSTAINABILITY",
-    [BlogCategoryEnum.CIRCULAR_ECONOMY]: "CIRCULAR_ECONOMY",
-    [BlogCategoryEnum.USED_PRODUCTS]: "USED_PRODUCTS",
-    [BlogCategoryEnum.REUSE]: "REUSE",
-    [BlogCategoryEnum.ENVIRONMENT]: "ENVIRONMENT",
-    [BlogCategoryEnum.UPCYCLING]: "UPCYCLING",
-    [BlogCategoryEnum.RESPONSIBLE_CONSUMPTION]: "RESPONSIBLE_CONSUMPTION",
-    [BlogCategoryEnum.ECO_TIPS]: "ECO_TIPS",
-    [BlogCategoryEnum.ENVIRONMENTAL_IMPACT]: "ENVIRONMENTAL_IMPACT",
-    [BlogCategoryEnum.SUSTAINABLE_LIVING]: "SUSTAINABLE_LIVING",
-    [BlogCategoryEnum.OTHER]: "OTHER",
-  };
-
-  return categoryMap[category];
-};
+import { type BlogCategory } from "../../types/blog";
+import { calculatePrismaParams, createPaginatedResponse } from "../../utils/pagination";
+import { PaginationInput } from "../resolvers/blogs";
+import { BlogType } from "@prisma/client";
 
 export const BlogService = {
   getBlogCategories: async () => {
-    const categories: BlogCategory[] = await prisma.blogCategory.findMany({
-      include: {
-        BlogPost: { where: { isPublished: true } },
-      },
-    });
+    const categories: BlogCategory[] = await prisma.blogCategory.findMany();
     if (!categories || categories.length === 0) {
       throw new ErrorService.NotFoundError("No se encontraron categorías de blogs");
     }
 
+    console.log("Categories fetched:", categories);
+
     return categories;
   },
-  getBlogs: async ({ take = 20, skip = 0, orderBy }: { take?: number; skip?: number; orderBy?: OrderBy }) => {
+  getBlogs: async ({ page = 1, pageSize = 10 }: PaginationInput) => {
     try {
-      const { field = "createdAt", direction = "desc" } = orderBy || {};
-      const orderByClause = { [field]: direction };
-
-      const where: Where = { isPublished: true };
-
-      const blogs = await prisma.blogPost.findMany({
-        where,
-        include: {
-          Admin: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
+      const { take, skip } = calculatePrismaParams(page, pageSize);
+      const totalCount = await prisma.blogPost.count({
+        where: {
+          isPublished: true,
         },
-        orderBy: orderByClause,
+      });
+      const blogs = await prisma.blogPost.findMany({
+        where: {
+          isPublished: true,
+        },
+        include: {
+          author: true,
+        },
+        orderBy: {
+          publishedAt: "desc",
+        },
         take,
         skip,
       });
@@ -81,7 +42,7 @@ export const BlogService = {
         throw new ErrorService.NotFoundError("No se encontraron blogs");
       }
 
-      return blogs;
+      return createPaginatedResponse(blogs, totalCount, page, pageSize);
     } catch (error) {
       console.error("Error getting blogs:", error);
       throw new ErrorService.InternalServerError("Error al obtener los blogs");
@@ -97,13 +58,7 @@ export const BlogService = {
       const blog = await prisma.blogPost.findFirst({
         where: { id },
         include: {
-          Admin: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
+          author: true,
         },
       });
 
@@ -119,30 +74,25 @@ export const BlogService = {
   },
 
   getBlogsByCategory: async ({
-    category,
-    take = 10,
-    skip = 0,
-  }: {
-    category: BlogCategoryEnum;
-    take?: number;
-    skip?: number;
-  }) => {
+    category = BlogType.OTHER,
+    page = 1,
+    pageSize = 10,
+  }: { category: BlogType } & PaginationInput) => {
     try {
-      const prismaCategory = mapCategoryToPrisma(category);
-
+      const { take, skip } = calculatePrismaParams(page, pageSize);
+      const totalCount = await prisma.blogPost.count({
+        where: {
+          isPublished: true,
+          type: category,
+        },
+      });
       const blogs = await prisma.blogPost.findMany({
         where: {
           isPublished: true,
-          category: prismaCategory,
+          type: category,
         },
         include: {
-          Admin: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
+          author: true,
         },
         orderBy: {
           publishedAt: "desc",
@@ -151,241 +101,135 @@ export const BlogService = {
         skip,
       });
 
-      return blogs;
+      return createPaginatedResponse(blogs, totalCount, page, pageSize);
     } catch (error) {
       console.error("Error getting blogs by category:", error);
       throw new ErrorService.InternalServerError("Error al obtener los blogs por categoría");
     }
   },
 
-  getBlogsByAuthor: async ({ authorId, take = 10, skip = 0 }: { authorId: string; take?: number; skip?: number }) => {
+  getBlogsByAuthor: async ({ authorId, page = 1, pageSize = 10 }: { authorId: string } & PaginationInput) => {
     try {
+      const { take, skip } = calculatePrismaParams(page, pageSize);
+      const totalCount = await prisma.blogPost.count({
+        where: {
+          authorId,
+        },
+      });
       const blogs = await prisma.blogPost.findMany({
         where: {
           authorId,
         },
         include: {
-          Admin: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
+          author: true,
         },
         orderBy: {
-          createdAt: "desc",
+          publishedAt: "desc",
         },
         take,
         skip,
       });
 
-      return blogs;
+      return createPaginatedResponse(blogs, totalCount, page, pageSize);
     } catch (error) {
       console.error("Error getting blogs by admin:", error);
       throw new ErrorService.InternalServerError("Error al obtener los blogs del administrador");
     }
   },
 
-  createBlog: async (blogData: {
-    title: string;
-    content: string;
-    authorId: string;
-    tags?: string[];
-    isPublished?: boolean;
-  }) => {
+  likeBlog: async ({ id, sellerId }: { id: number; sellerId: string }) => {
     try {
-      const blog = await prisma.blogPost.create({
-        data: {
-          title: blogData.title,
-          content: blogData.content,
-          authorId: blogData.authorId,
-          tags: blogData.tags || [],
-          isPublished: blogData.isPublished || false,
-          publishedAt: blogData.isPublished ? new Date() : null,
-          updatedAt: new Date(),
-        },
-        include: {
-          Admin: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
+      if (!sellerId) {
+        throw new ErrorService.UnAuthorizedError("No autorizado");
+      }
+
+      const checkExisting = await prisma.blogReaction.findFirst({
+        where: {
+          blogPostId: id,
+          sellerId,
         },
       });
 
-      return blog;
+      if (checkExisting?.reaction === "LIKE") {
+        await prisma.blogReaction.delete({
+          where: {
+            id: checkExisting.id,
+          },
+        });
+      }
+
+      if (checkExisting?.reaction === "DISLIKE") {
+        await prisma.blogReaction.update({
+          where: {
+            id: checkExisting.id,
+          },
+          data: {
+            reaction: "LIKE",
+          },
+        });
+      }
+
+      await prisma.blogReaction.create({
+        data: {
+          blogPostId: id,
+          sellerId,
+          reaction: "LIKE",
+          updatedAt: new Date(),
+        },
+      });
+
+      return true;
     } catch (error) {
-      console.error("Error creating blog:", error);
-      throw new ErrorService.InternalServerError("Error al crear el blog");
+      console.error("Error liking blog:", error);
+      throw new ErrorService.InternalServerError("Error al dar me gusta al blog");
     }
   },
 
-  // updateBlog: async ({
-  //   id,
-  //   ...updateData
-  // }: {
-  //   id: string;
-  //   title?: string;
-  //   content?: string;
-  //   tags?: string[];
-  //   isPublished?: boolean;
-  // }) => {
-  //   try {
-  //     const updatePayload: any = {
-  //       ...updateData,
-  //       updatedAt: new Date(),
-  //     };
+  dislikeBlog: async ({ id, sellerId }: { id: number; sellerId: string }) => {
+    try {
+      if (!sellerId) {
+        throw new ErrorService.UnAuthorizedError("No autorizado");
+      }
 
-  //     // If publishing for the first time, set publishedAt
-  //     if (updateData.isPublished && !updateData.isPublished) {
-  //       updatePayload.publishedAt = new Date();
-  //     }
+      const checkExisting = await prisma.blogReaction.findFirst({
+        where: {
+          blogPostId: id,
+          sellerId,
+        },
+      });
 
-  //     const blog = await prisma.blogPost.update({
-  //       where: {
-  //         id: parseInt(id),
-  //       },
-  //       data: updatePayload,
-  //       include: {
-  //         Admin: {
-  //           select: {
-  //             id: true,
-  //             name: true,
-  //             email: true,
-  //           },
-  //         },
-  //       },
-  //     });
+      if (checkExisting?.reaction === "DISLIKE") {
+        await prisma.blogReaction.delete({
+          where: {
+            id: checkExisting.id,
+          },
+        });
+      }
 
-  //     return blog;
-  //   } catch (error) {
-  //     console.error("Error updating blog:", error);
-  //     throw new ErrorService.InternalServerError("Error al actualizar el blog");
-  //   }
-  // },
+      if (checkExisting?.reaction === "LIKE") {
+        await prisma.blogReaction.update({
+          where: {
+            id: checkExisting.id,
+          },
+          data: {
+            reaction: "DISLIKE",
+          },
+        });
+      }
 
-  // deleteBlog: async ({ id }: { id: string }) => {
-  //   try {
-  //     const blog = await prisma.blogPost.delete({
-  //       where: {
-  //         id: parseInt(id),
-  //       },
-  //       include: {
-  //         Admin: {
-  //           select: {
-  //             id: true,
-  //             name: true,
-  //             email: true,
-  //           },
-  //         },
-  //       },
-  //     });
+      await prisma.blogReaction.create({
+        data: {
+          blogPostId: id,
+          sellerId,
+          reaction: "DISLIKE",
+          updatedAt: new Date(),
+        },
+      });
 
-  //     return blog;
-  //   } catch (error) {
-  //     console.error("Error deleting blog:", error);
-  //     throw new ErrorService.InternalServerError("Error al eliminar el blog");
-  //   }
-  // },
-
-  // publishBlog: async ({ id }: { id: string }) => {
-  //   try {
-  //     const blog = await prisma.blogPost.update({
-  //       where: {
-  //         id: parseInt(id),
-  //       },
-  //       data: {
-  //         isPublished: true,
-  //         publishedAt: new Date(),
-  //         updatedAt: new Date(),
-  //       },
-  //       include: {
-  //         Admin: {
-  //           select: {
-  //             id: true,
-  //             name: true,
-  //             email: true,
-  //           },
-  //         },
-  //       },
-  //     });
-
-  //     return blog;
-  //   } catch (error) {
-  //     console.error("Error publishing blog:", error);
-  //     throw new ErrorService.InternalServerError("Error al publicar el blog");
-  //   }
-  // },
-
-  // unpublishBlog: async ({ id }: { id: string }) => {
-  //   try {
-  //     const blog = await prisma.blogPost.update({
-  //       where: {
-  //         id: parseInt(id),
-  //       },
-  //       data: {
-  //         isPublished: false,
-  //         updatedAt: new Date(),
-  //       },
-  //       include: {
-  //         Admin: {
-  //           select: {
-  //             id: true,
-  //             name: true,
-  //             email: true,
-  //           },
-  //         },
-  //       },
-  //     });
-
-  //     return blog;
-  //   } catch (error) {
-  //     console.error("Error unpublishing blog:", error);
-  //     throw new ErrorService.InternalServerError("Error al despublicar el blog");
-  //   }
-  // },
-
-  // toggleLikeBlog: async ({ id, userId }: { id: string; userId: string }) => {
-  //   try {
-  //     // Note: Like functionality is not available in current BlogPost model
-  //     // You would need to create a BlogLike model to implement this feature
-
-  //     // For now, just return the blog without like functionality
-  //     const blog = await prisma.blogPost.findUnique({
-  //       where: { id: parseInt(id) },
-  //       include: {
-  //         Admin: {
-  //           select: {
-  //             id: true,
-  //             name: true,
-  //             email: true,
-  //           },
-  //         },
-  //       },
-  //     });
-
-  //     if (!blog) {
-  //       throw new ErrorService.NotFoundError("Blog no encontrado");
-  //     }
-
-  //     return blog;
-  //   } catch (error) {
-  //     console.error("Error toggling blog like:", error);
-  //     throw new ErrorService.InternalServerError("Error al dar/quitar like al blog");
-  //   }
-  // },
-
-  // addComment: async ({ blogId, userId, comment }: { blogId: string; userId: string; comment: string }) => {
-  //   try {
-  //     // Note: Comment functionality is not available in current BlogPost model
-  //     // You would need to create a BlogComment model to implement this feature
-  //     throw new ErrorService.BadRequestError("La funcionalidad de comentarios no está disponible actualmente");
-  //   } catch (error) {
-  //     console.error("Error adding comment:", error);
-  //     throw error;
-  //   }
-  // },
+      return true;
+    } catch (error) {
+      console.error("Error disliking blog:", error);
+      throw new ErrorService.InternalServerError("Error al dar no me gusta al blog");
+    }
+  },
 };

@@ -4,7 +4,7 @@ export const typeDefs = gql`
   extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@shareable", "@external"])
 
   # Federated user type from users subgraph
-  extend type User @key(fields: "id") {
+  extend type Seller @key(fields: "id") {
     id: ID! @external
   }
 
@@ -12,14 +12,23 @@ export const typeDefs = gql`
     id: ID! @external
   }
 
-  # Blog-specific enums
-  enum BlogStatus {
-    DRAFT
-    PUBLISHED
-    ARCHIVED
+  type PageInfo @shareable {
+    hasNextPage: Boolean!
+    hasPreviousPage: Boolean!
+    startCursor: String
+    endCursor: String
+    totalCount: Int!
+    totalPages: Int!
+    currentPage: Int!
+    pageSize: Int!
   }
 
-  enum BlogCategoryType {
+  enum BlogReactionType {
+    LIKE
+    DISLIKE
+  }
+
+  enum BlogType {
     RECYCLING
     POLLUTION
     SUSTAINABILITY
@@ -33,6 +42,7 @@ export const typeDefs = gql`
     ENVIRONMENTAL_IMPACT
     SUSTAINABLE_LIVING
     OTHER
+    SECURITY
   }
 
   type BlogCategory {
@@ -40,117 +50,49 @@ export const typeDefs = gql`
     name: String!
     icon: String
     description: String
-    blogs: [Blog]
+    blogs: [BlogPost!]!
   }
 
-  type BlogComment {
-    id: ID!
-    comment: String!
-    userId: String!
-    user: User # Federated user reference
-    createdAt: DateTime!
-  }
-
-  type BlogLike {
-    id: ID!
-    userId: String!
-    user: User # Federated user reference
-    createdAt: DateTime!
-  }
-
-  type Blog @key(fields: "id") {
+  type BlogPost @key(fields: "id") {
     id: ID!
     title: String!
     content: String!
-    excerpt: String
-    slug: String!
-    category: BlogCategoryType!
-    status: BlogStatus!
-    featuredImage: String
-    images: [String]
-    tags: [String]
-    metaTitle: String
-    metaDescription: String
-    readingTime: Int
-    views: Int
+    authorId: String!
+    isPublished: Boolean!
     publishedAt: DateTime
     createdAt: DateTime!
     updatedAt: DateTime!
-    adminId: String!
-    admin: Admin # Reference to the admin who wrote the blog
-    comments: [BlogComment]
-    likes: [BlogLike]
-    likesCount: Int
-    commentsCount: Int
+    category: BlogCategory!
+    author: Admin!
+    likes: Int
+    dislikes: Int
+  }
+
+  type BlogPostsConnection {
+    nodes: [BlogPost!]!
+    pageInfo: PageInfo!
+  }
+
+  type BlogReaction {
+    id: ID!
+    blogPostId: ID!
+    sellerId: ID!
+    reaction: BlogReactionType!
   }
 
   scalar DateTime
   scalar JSON
 
-  enum SortDirection {
-    asc
-    desc
-  }
-
-  input OrderByInput {
-    field: String!
-    direction: SortDirection!
-  }
-
   extend type Query {
-    # Blog queries
     blogCategories: [BlogCategory!]!
-
-    blogs(take: Int = 10, skip: Int = 0, orderBy: OrderByInput): [Blog]
-
-    blog(id: ID!): Blog
-
-    blogsByCategory(category: BlogCategoryType!, take: Int = 10, skip: Int = 0): [Blog]
-
-    blogsByAuthor(authorId: String!, take: Int = 10, skip: Int = 0): [Blog]
+    blogs(page: Int! = 1, pageSize: Int! = 10): BlogPostsConnection!
+    blog(id: ID!): BlogPost
+    blogsByCategory(category: BlogType!, page: Int! = 1, pageSize: Int! = 10): BlogPostsConnection!
+    blogsByAuthor(authorId: String!, page: Int! = 1, pageSize: Int! = 10): BlogPostsConnection!
   }
 
   extend type Mutation {
-    # Blog mutations (admin only)
-    createBlog(
-      title: String!
-      content: String!
-      excerpt: String
-      slug: String!
-      category: BlogCategoryType!
-      status: BlogStatus = DRAFT
-      featuredImage: String
-      images: [String]
-      tags: [String]
-      metaTitle: String
-      metaDescription: String
-      adminId: String!
-    ): Blog
-
-    updateBlog(
-      id: ID!
-      title: String
-      content: String
-      excerpt: String
-      slug: String
-      category: BlogCategoryType
-      status: BlogStatus
-      featuredImage: String
-      images: [String]
-      tags: [String]
-      metaTitle: String
-      metaDescription: String
-    ): Blog
-
-    deleteBlog(id: ID!): Blog
-
-    publishBlog(id: ID!): Blog
-
-    unpublishBlog(id: ID!): Blog
-
-    # Blog interactions (users)
-    likeBlog(id: ID!, userId: String!): Blog
-
-    commentOnBlog(blogId: ID!, userId: String!, comment: String!): BlogComment
+    likeBlog(id: ID!, sellerId: String!): BlogPost!
+    dislikeBlog(id: ID!, sellerId: String!): BlogPost!
   }
 `;

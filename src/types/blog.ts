@@ -1,10 +1,4 @@
-export enum BlogStatus {
-  DRAFT = "DRAFT",
-  PUBLISHED = "PUBLISHED",
-  ARCHIVED = "ARCHIVED",
-}
-
-export enum BlogCategoryEnum {
+export enum BlogTypeEnum {
   RECYCLING,
   POLLUTION,
   SUSTAINABILITY,
@@ -20,7 +14,7 @@ export enum BlogCategoryEnum {
   OTHER,
 }
 
-export enum BlogCategoryType {
+export enum BlogType {
   RECYCLING = "Reciclaje",
   POLLUTION = "Contaminación",
   SUSTAINABILITY = "Sostenibilidad",
@@ -39,25 +33,23 @@ export enum BlogCategoryType {
 export type BlogCategory = {
   id: number;
   name: string;
-  icon?: string | null;
+  icon: string;
+  description: string;
 };
 
-export type Blog = {
+export type BlogPost = {
   id: number;
   title: string;
   content: string;
   authorId: string;
-  tags: string[];
   isPublished: boolean;
-  publishedAt?: Date | null;
+  publishedAt: Date;
   createdAt: Date;
   updatedAt: Date;
-  // Optional: relation to Admin
-  Admin?: {
-    id: string;
-    name: string;
-    email: string;
-  };
+  category: BlogCategory;
+  author: Admin;
+  likes: number;
+  dislikes: number;
 };
 
 export type BlogComment = {

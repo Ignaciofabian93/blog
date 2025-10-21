@@ -7,10 +7,4 @@ export const resolvers = {
   Mutation: {
     ...BlogResolver.Mutation,
   },
-  Blog: {
-    __resolveReference: BlogResolver.Blog.__resolveReference,
-  },
-  Admin: {
-    __resolveReference: BlogResolver.Admin.__resolveReference,
-  },
 };
