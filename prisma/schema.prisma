@@ -26,12 +26,6 @@ enum BusinessSubscriptionPlan {
   EXPERT
 }
 
-enum AccountType {
-  FREE
-  PLUS
-  PREMIUM
-}
-
 // Platform admins vs Business admins
 enum AdminType {
   PLATFORM // Ekoru staff members
@@ -149,13 +143,6 @@ enum BusinessType {
   RETAIL
   SERVICES
   MIXED
-}
-
-enum BusinessFormalizationStatus {
-  NOT_REQUIRED
-  PENDING
-  IN_PROGRESS
-  FORMALIZED
 }
 
 enum ChileanPaymentProvider {
@@ -378,6 +365,7 @@ model County {
   seller Seller[]
   admin  Admin[]
 }
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                      Admin
@@ -454,6 +442,7 @@ model AdminActivityLog {
   @@index([entityType, entityId]) // All actions on specific entity
   @@index([action, createdAt(sort: Desc)]) // Recent actions by type
 }
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                               Seller And Profiles
@@ -477,14 +466,9 @@ model Seller {
   website                String?
   preferredContactMethod ContactMethod? @default(WHATSAPP)
   socialMediaLinks       Json?
-  accountType            AccountType?   @default(FREE)
   points                 Int            @default(0)
   sellerLevelId          Int?
   sellerCategoryId       Int?
-
-  // Multi-country support
-  locale   String @default("es-CL") // Language and regional preferences
-  timezone String @default("America/Santiago") // User's timezone
 
   // Profile Relations - Each seller has ONE profile based on sellerType
   personProfile   PersonProfile? // For PERSON type
@@ -576,17 +560,18 @@ model SellerLevel {
 }
 
 model PersonProfile {
-  id             String    @id @default(uuid())
-  sellerId       String    @unique
-  firstName      String
-  lastName       String?
-  displayName    String?
-  bio            String?
-  birthday       DateTime?
-  profileImage   String?
-  coverImage     String?
-  allowExchanges Boolean   @default(true) // Only PERSON users can exchange
-  seller         Seller    @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  id                     String                 @id @default(uuid())
+  sellerId               String                 @unique
+  firstName              String
+  lastName               String?
+  displayName            String?
+  bio                    String?
+  birthday               DateTime?
+  profileImage           String?
+  coverImage             String?
+  allowExchanges         Boolean                @default(true) // Only PERSON users can exchange
+  personSubscriptionPlan PersonSubscriptionPlan @default(FREEMIUM)
+  seller                 Seller                 @relation(fields: [sellerId], references: [id], onDelete: Cascade)
 }
 
 model BusinessProfile {
@@ -595,7 +580,6 @@ model BusinessProfile {
 
   // Basic Information
   businessName String // Nombre comercial
-  displayName  String? // Display name for the platform
   description  String?
   logo         String?
   coverImage   String?
@@ -604,18 +588,9 @@ model BusinessProfile {
   // Chilean Legal Requirements
   legalBusinessName        String? // Razón Social (legal business name)
   taxId                    String?   @unique // RUT - Rol Único Tributario (Chilean Tax ID)
-  businessActivity         String? // Giro (business activity/sector)
   businessStartDate        DateTime? // Inicio de Actividades (SII registration date)
   legalRepresentative      String? // Representante Legal (legal representative name)
   legalRepresentativeTaxId String? // RUT of legal representative
-
-  // Formalization Status (for STARTUP type)
-  formalizationStatus   BusinessFormalizationStatus @default(NOT_REQUIRED)
-  formalizationDeadline DateTime? // For startups: deadline to formalize
-  formalizationNotes    String? // Notes about formalization process
-
-  // Business Operations (exchanges not allowed for businesses)
-  minOrderAmount Int?
 
   // For RETAIL and MIXED
   shippingPolicy String?
@@ -624,27 +599,19 @@ model BusinessProfile {
   // For SERVICES and MIXED
   serviceArea       String?
   yearsOfExperience Int?
-  licenseNumber     String?
-  insuranceInfo     String?
   certifications    String[]
-  emergencyService  Boolean  @default(false)
   travelRadius      Int? // In kilometers
 
   // Operating Hours
   businessHours Json? // Store/service hours
 
-  // Additional Info
-  taxDocuments          String[] // URLs to uploaded documents
-  verificationDocuments String[] // Documents for verification
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  seller Seller @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  createdAt                DateTime                 @default(now())
+  updatedAt                DateTime                 @updatedAt
+  businessSubscriptionPlan BusinessSubscriptionPlan @default(FREEMIUM)
+  seller                   Seller                   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
 
   @@index([taxId])
   @@index([businessType])
-  @@index([formalizationStatus])
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -731,8 +698,6 @@ model Product {
   orderItem                                     OrderItem[]
   productCategory                               ProductCategory  @relation(fields: [productCategoryId], references: [id])
   seller                                        Seller           @relation(fields: [sellerId], references: [id])
-  productComment                                ProductComment[]
-  productLike                                   ProductLike[]
 
   @@index([createdAt])
   @@index([isActive])
@@ -746,6 +711,7 @@ model Product {
   @@index([hasOffer, isActive]) // Products on offer
   @@index([deletedAt]) // Filter out soft-deleted products
 }
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                    STORE
@@ -800,6 +766,8 @@ model StoreProduct {
   seller           Seller                 @relation(fields: [sellerId], references: [id])
   // NEW: Junction table relation for upcycled materials tracking
   materials        StoreProductMaterial[]
+  productComment   ProductComment[]
+  productLike      ProductLike[]
 
   @@index([sellerId])
   @@index([subcategoryId])
@@ -855,6 +823,7 @@ model ProductVariant {
 
   @@unique([storeProductId, color, size])
 }
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                    SERVICES
@@ -947,20 +916,20 @@ model Quotation {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 model BlogPost {
-  id             Int          @id @default(autoincrement())
+  id             Int            @id @default(autoincrement())
   title          String
   content        String
   authorId       String
-  isPublished    Boolean      @default(false)
+  isPublished    Boolean        @default(false)
   publishedAt    DateTime?
-  createdAt      DateTime     @default(now())
+  createdAt      DateTime       @default(now())
   updatedAt      DateTime
   blogCategoryId Int
-  likes          Int          @default(0)
-  dislikes       Int          @default(0)
-  blogCategory   BlogCategory @relation(fields: [blogCategoryId], references: [id])
-  type           BlogType     @default(OTHER)
-  author         Admin        @relation(fields: [authorId], references: [id])
+  likes          Int            @default(0)
+  dislikes       Int            @default(0)
+  blogCategory   BlogCategory   @relation(fields: [blogCategoryId], references: [id])
+  type           BlogType       @default(OTHER)
+  author         Admin          @relation(fields: [authorId], references: [id])
   blogReactions  BlogReaction[] // Track individual user reactions
 
   @@index([type])
@@ -973,7 +942,7 @@ model BlogPost {
 model BlogReaction {
   id         Int              @id @default(autoincrement())
   blogPostId Int
-  sellerId   String           // User who reacted
+  sellerId   String // User who reacted
   reaction   BlogReactionType // LIKE or DISLIKE
   createdAt  DateTime         @default(now())
   updatedAt  DateTime         @updatedAt
@@ -1348,26 +1317,26 @@ model MaterialImpactEstimate {
 }
 
 model ProductComment {
-  id        Int      @id @default(autoincrement())
-  comment   String
-  productId Int
-  sellerId  String
-  createdAt DateTime @default(now())
-  rating    Int?
-  product   Product  @relation(fields: [productId], references: [id])
-  seller    Seller   @relation(fields: [sellerId], references: [id])
+  id             Int          @id @default(autoincrement())
+  comment        String
+  storeProductId Int
+  sellerId       String
+  createdAt      DateTime     @default(now())
+  rating         Int?
+  storeProduct   StoreProduct @relation(fields: [storeProductId], references: [id])
+  seller         Seller       @relation(fields: [sellerId], references: [id])
 }
 
 model ProductLike {
-  id        Int      @id @default(autoincrement())
-  productId Int
-  sellerId  String
-  createdAt DateTime @default(now())
-  product   Product  @relation(fields: [productId], references: [id])
-  seller    Seller   @relation(fields: [sellerId], references: [id])
+  id             Int          @id @default(autoincrement())
+  storeProductId Int
+  sellerId       String
+  createdAt      DateTime     @default(now())
+  storeProduct   StoreProduct @relation(fields: [storeProductId], references: [id])
+  seller         Seller       @relation(fields: [sellerId], references: [id])
 
-  @@unique([productId, sellerId]) // Prevent duplicate likes
-  @@index([productId])
+  @@unique([storeProductId, sellerId]) // Prevent duplicate likes
+  @@index([storeProductId])
   @@index([sellerId])
   @@index([createdAt(sort: Desc)])
 }
@@ -1380,11 +1349,3 @@ model Story {
   sellerId    String
   seller      Seller   @relation(fields: [sellerId], references: [id])
 }
-
-
-
-
-
-
-
-
