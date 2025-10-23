@@ -1,5 +1,5 @@
+import { BlogType } from "../../types/blog";
 import { BlogService } from "../services/blog";
-import { BlogType } from "@prisma/client";
 
 export type PaginationInput = {
   page?: number;

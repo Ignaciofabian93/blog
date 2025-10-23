@@ -1,9 +1,8 @@
 import prisma from "../../client/prisma";
 import { ErrorService } from "../../errors/errors";
-import { type BlogCategory } from "../../types/blog";
+import { BlogType, type BlogCategory } from "../../types/blog";
 import { calculatePrismaParams, createPaginatedResponse } from "../../utils/pagination";
 import { PaginationInput } from "../resolvers/blogs";
-import { BlogType } from "@prisma/client";
 
 export const BlogService = {
   getBlogCategories: async () => {
