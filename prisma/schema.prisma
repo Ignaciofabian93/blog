@@ -26,6 +26,17 @@ enum BusinessSubscriptionPlan {
   EXPERT
 }
 
+enum AdvertisementType {
+  HERO_BANNER
+  CATEGORY_HIGHLIGHT
+  PRODUCT_HIGHLIGHT
+  FEED_AD_BANNER
+  NEWSLETTER_SPOTLIGHT
+  PROMOTIONAL_SEARCH
+  SOCIAL_MEDIA_SPOTLIGHT
+  MONTHLY_PACKAGE
+}
+
 // Platform admins vs Business admins
 enum AdminType {
   PLATFORM // Ekoru staff members
@@ -298,6 +309,172 @@ enum WeightUnit {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                      SELLER CATEGORIES AND LEVELS
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+model SellerLabel {
+  id                   Int                    @id @default(autoincrement())
+  labelName            String                 @unique
+  transactionKind      TransactionKind
+  transactionsRequired Int
+  description          String? // e.g., "Complete 5 second-hand purchases"
+  badgeIcon            String? // Icon/image URL for the badge
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+
+  // Relations - sellers who have achieved this label
+  achievedBy SellerAchievedLabel[]
+
+  @@index([transactionKind])
+  @@index([transactionsRequired])
+}
+
+// Junction table to track which sellers have earned which labels
+// WHY NECESSARY: Allows tracking WHEN labels were earned, current progress, and prevents duplicate achievements
+model SellerAchievedLabel {
+  id          Int      @id @default(autoincrement())
+  sellerId    String
+  labelId     Int
+  achievedAt  DateTime @default(now()) // When the seller earned this badge
+  
+  // Progress tracking (optional but useful)
+  currentCount Int? // Current transaction count for this type (e.g., "7 purchases done, need 15 for next badge")
+  
+  seller Seller      @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  label  SellerLabel @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@unique([sellerId, labelId]) // Prevent duplicate achievements - one seller can't earn same badge twice
+  @@index([sellerId])
+  @@index([labelId])
+  @@index([achievedAt])
+}
+
+model PointsByTransactionKind {
+  id              Int             @id @default(autoincrement())
+  transactionKind TransactionKind @unique
+  pointsAwarded   Int
+  description     String? // e.g., "Points awarded per second-hand purchase"
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([transactionKind])
+}
+
+model SellerLevel {
+  id        Int      @id @default(autoincrement())
+  levelName String   @unique
+  minPoints Int      @unique // Minimum points required for this level
+  maxPoints Int? // Maximum points (null for highest level)
+  benefits  Json? // Perks, discounts, features unlocked at this level
+  badgeIcon String? // Visual badge for this level
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  sellers Seller[]
+
+  @@index([minPoints])
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                      MEMBERSHIPS, ADS AND FEES
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+model PersonMembership {
+  id             Int                    @id @default(autoincrement())
+  membershipType PersonSubscriptionPlan @default(FREEMIUM)
+  price          Int
+  description    String[]
+  durationMonths Int
+  startDate      DateTime               @default(now())
+  endDate        DateTime?
+  isActive       Boolean                @default(true)
+  autoRenew      Boolean                @default(false)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  // Relations
+  personProfiles PersonProfile[] // Users subscribed to this membership plan
+
+  @@index([membershipType])
+  @@index([isActive])
+}
+
+model BusinessMembership {
+  id             Int                      @id @default(autoincrement())
+  membershipType BusinessSubscriptionPlan @default(FREEMIUM)
+  price          Int
+  description    String[]
+  durationMonths Int
+  startDate      DateTime                 @default(now())
+  endDate        DateTime?
+  isActive       Boolean                  @default(true)
+  autoRenew      Boolean                  @default(false)
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+
+  // Relations
+  businessProfiles BusinessProfile[] // Businesses subscribed to this membership plan
+
+  @@index([membershipType])
+  @@index([isActive])
+}
+
+model TransactionFee {
+  id            Int        @id @default(autoincrement())
+  sellerTypeFee SellerType
+  feePercentage Float      @default(0.0)
+  description   String
+
+  // Relations
+  transactions Transaction[]
+
+  @@index([sellerTypeFee])
+  @@index([feePercentage])
+}
+
+// IMPORTANT: Advertisements are ONLY available for BUSINESS sellers
+// Application must enforce: only sellers where seller.sellerType = 'STARTUP' or 'COMPANY' can purchase ads
+// PERSON sellers cannot purchase advertisements
+// This is enforced at the application level, not in the database
+model Advertisement {
+  id        Int               @id @default(autoincrement())
+  adType    AdvertisementType
+  price     Int
+  content   String
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean           @default(true)
+
+  // Seller who purchased the ad (MUST be STARTUP or COMPANY type)
+  sellerId String
+  seller   Seller @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  // Optional: Link to specific product or service being advertised
+  productId Int?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  storeProductId Int?
+  storeProduct   StoreProduct? @relation(fields: [storeProductId], references: [id], onDelete: SetNull)
+
+  serviceId Int?
+  service   Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sellerId])
+  @@index([adType])
+  @@index([isActive])
+  @@index([startDate, endDate])
+  @@index([productId])
+  @@index([storeProductId])
+  @@index([serviceId])
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                                      LOCATION
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -411,6 +588,7 @@ model Admin {
 
   // Relations
   blogPost         BlogPost[]
+  communityPost    CommunityPost[]
   adminActivityLog AdminActivityLog[]
 
   @@index([email])
@@ -449,7 +627,7 @@ model AdminActivityLog {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 model Seller {
-  id                     String         @id
+  id                     String         @id     @default(uuid())
   email                  String         @unique
   password               String
   sellerType             SellerType
@@ -468,7 +646,10 @@ model Seller {
   socialMediaLinks       Json?
   points                 Int            @default(0)
   sellerLevelId          Int?
-  sellerCategoryId       Int?
+  sellerLevel            SellerLevel?   @relation(fields: [sellerLevelId], references: [id])
+  
+  // Gamification - Achieved labels (many-to-many through junction table)
+  achievedLabels SellerAchievedLabel[]
 
   // Profile Relations - Each seller has ONE profile based on sellerType
   personProfile   PersonProfile? // For PERSON type
@@ -477,11 +658,13 @@ model Seller {
   // Admin Team - Business admins who can manage this seller account
   admin Admin[]
 
+  // Advertising and Memberships
+  advertisement Advertisement[]
+
   chat_Chat_receiverIdToSeller           Chat[]                 @relation("Chat_receiverIdToSeller")
   chat_Chat_senderIdToSeller             Chat[]                 @relation("Chat_senderIdToSeller")
   chileanPaymentConfig                   ChileanPaymentConfig[]
   communityComment                       CommunityComment[]
-  communityPost                          CommunityPost[]
   match_Match_receiverIdToSeller         Match[]                @relation("Match_receiverIdToSeller")
   match_Match_senderIdToSeller           Match[]                @relation("Match_senderIdToSeller")
   message                                Message[]
@@ -500,13 +683,11 @@ model Seller {
   country                                Country?               @relation(fields: [countryId], references: [id])
   county                                 County?                @relation(fields: [countyId], references: [id])
   region                                 Region?                @relation(fields: [regionId], references: [id])
-  sellerCategory                         SellerCategory?        @relation(fields: [sellerCategoryId], references: [id])
   sellerPreferences                      SellerPreferences?
   service                                Service[]
   serviceReview                          ServiceReview[]
   story                                  Story[]
   transaction                            Transaction[]
-  sellerLevel                            SellerLevel?           @relation(fields: [sellerLevelId], references: [id])
 
   @@index([cityId])
   @@index([email])
@@ -517,15 +698,6 @@ model Seller {
   @@index([sellerLevelId]) // Sellers by level
   @@index([points(sort: Desc)]) // Top sellers by points
   @@index([createdAt(sort: Desc)]) // Recently joined sellers
-}
-
-model SellerCategory {
-  id                     Int      @id @default(autoincrement())
-  name                   String
-  categoryDiscountAmount Int
-  pointsThreshold        Int
-  level                  Int
-  seller                 Seller[]
 }
 
 model SellerPreferences {
@@ -543,35 +715,26 @@ model SellerPreferences {
   seller             Seller  @relation(fields: [sellerId], references: [id], onDelete: Cascade)
 }
 
-model SellerLevel {
-  id        Int      @id @default(autoincrement())
-  levelName String   @unique
-  minPoints Int      @unique // Minimum points required for this level
-  maxPoints Int? // Maximum points (null for highest level)
-  benefits  Json? // Perks, discounts, features unlocked at this level
-  badgeIcon String? // Visual badge for this level
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  sellers Seller[]
-
-  @@index([minPoints])
-}
-
 model PersonProfile {
-  id                     String                 @id @default(uuid())
-  sellerId               String                 @unique
-  firstName              String
-  lastName               String?
-  displayName            String?
-  bio                    String?
-  birthday               DateTime?
-  profileImage           String?
-  coverImage             String?
-  allowExchanges         Boolean                @default(true) // Only PERSON users can exchange
-  personSubscriptionPlan PersonSubscriptionPlan @default(FREEMIUM)
-  seller                 Seller                 @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  id             String    @id @default(uuid())
+  sellerId       String    @unique
+  firstName      String
+  lastName       String?
+  displayName    String?
+  bio            String?
+  birthday       DateTime?
+  profileImage   String?
+  coverImage     String?
+  allowExchanges Boolean   @default(true) // Only PERSON users can exchange
+
+  // Active membership subscription
+  personMembershipId Int?
+  personMembership   PersonMembership? @relation(fields: [personMembershipId], references: [id])
+
+  seller Seller @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([personMembershipId])
+  @@index([sellerId])
 }
 
 model BusinessProfile {
@@ -605,13 +768,18 @@ model BusinessProfile {
   // Operating Hours
   businessHours Json? // Store/service hours
 
-  createdAt                DateTime                 @default(now())
-  updatedAt                DateTime                 @updatedAt
-  businessSubscriptionPlan BusinessSubscriptionPlan @default(FREEMIUM)
-  seller                   Seller                   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  // Active membership subscription
+  businessMembershipId Int?
+  businessMembership   BusinessMembership? @relation(fields: [businessMembershipId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  seller    Seller   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
 
   @@index([taxId])
   @@index([businessType])
+  @@index([businessMembershipId])
+  @@index([sellerId])
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -696,6 +864,7 @@ model Product {
   exchange_Exchange_offeredProductIdToProduct   Exchange[]       @relation("Exchange_offeredProductIdToProduct")
   exchange_Exchange_requestedProductIdToProduct Exchange[]       @relation("Exchange_requestedProductIdToProduct")
   orderItem                                     OrderItem[]
+  advertisement                                 Advertisement[]
   productCategory                               ProductCategory  @relation(fields: [productCategoryId], references: [id])
   seller                                        Seller           @relation(fields: [sellerId], references: [id])
 
@@ -762,6 +931,7 @@ model StoreProduct {
   carbonFootprint     Float? // Total CO2 footprint in kg
 
   productVariant   ProductVariant[]
+  advertisement    Advertisement[]
   storeSubCategory StoreSubCategory       @relation(fields: [subcategoryId], references: [id])
   seller           Seller                 @relation(fields: [sellerId], references: [id])
   // NEW: Junction table relation for upcycled materials tracking
@@ -859,6 +1029,7 @@ model Service {
   createdAt       DateTime           @default(now())
   updatedAt       DateTime
   quotation       Quotation[]
+  advertisement   Advertisement[]
   serviceCategory ServiceSubCategory @relation(fields: [subcategoryId], references: [id])
   seller          Seller             @relation(fields: [sellerId], references: [id])
   serviceReview   ServiceReview[]
@@ -982,7 +1153,8 @@ model CommunityComment {
 
 model CommunityPost {
   id               Int                @id @default(autoincrement())
-  sellerId         String
+  authorId         String
+  title            String
   content          String
   images           String[]
   likes            Int                @default(0)
@@ -990,10 +1162,10 @@ model CommunityPost {
   createdAt        DateTime           @default(now())
   updatedAt        DateTime
   communityComment CommunityComment[]
-  seller           Seller             @relation(fields: [sellerId], references: [id])
+  author           Admin              @relation(fields: [authorId], references: [id])
 
   @@index([createdAt])
-  @@index([sellerId])
+  @@index([authorId])
 }
 
 model CommunityCategory {
@@ -1020,12 +1192,18 @@ model Transaction {
   pointsCollected Int
   createdAt       DateTime        @default(now())
   sellerId        String
-  exchange        Exchange?
-  seller          Seller          @relation(fields: [sellerId], references: [id])
+
+  // Transaction fee applied (based on seller type)
+  transactionFeeId Int?
+  transactionFee   TransactionFee? @relation(fields: [transactionFeeId], references: [id])
+
+  exchange Exchange?
+  seller   Seller    @relation(fields: [sellerId], references: [id])
 
   @@index([sellerId, kind]) // Query transaction history by seller and type
   @@index([sellerId, createdAt(sort: Desc)]) // Recent transactions by seller
   @@index([createdAt]) // Time-based queries
+  @@index([transactionFeeId])
 }
 
 model Exchange {

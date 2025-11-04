@@ -42,7 +42,7 @@ app.get("/", (req, res) => {
   res.send("Blog's subgraph is running");
 });
 
-const PORT = process.env.PORT || 9005;
+const PORT = process.env.PORT || 9004;
 
 app.listen(PORT, () => {
   console.log(`Blog's subgraph is running on port ${PORT}`);

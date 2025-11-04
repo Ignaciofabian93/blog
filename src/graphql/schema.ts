@@ -3,7 +3,7 @@ import gql from "graphql-tag";
 export const typeDefs = gql`
   extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@shareable", "@external"])
 
-  # Federated user type from users subgraph
+  # Federated user types from users subgraph
   extend type Seller @key(fields: "id") {
     id: ID! @external
   }
@@ -66,6 +66,7 @@ export const typeDefs = gql`
     author: Admin!
     likes: Int
     dislikes: Int
+    type: BlogType!
   }
 
   type BlogPostsConnection {
@@ -78,21 +79,98 @@ export const typeDefs = gql`
     blogPostId: ID!
     sellerId: ID!
     reaction: BlogReactionType!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+  }
+
+  # Community Types
+  type CommunityCategory {
+    id: ID!
+    category: String!
+    subcategories: [CommunitySubCategory!]!
+  }
+
+  type CommunitySubCategory {
+    id: ID!
+    subCategory: String!
+    communityCategoryId: ID!
+    category: CommunityCategory!
+  }
+
+  type CommunityPost @key(fields: "id") {
+    id: ID!
+    title: String!
+    content: String!
+    authorId: String!
+    images: [String!]!
+    likes: Int!
+    comments: Int!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    author: Admin!
+    communityComments: [CommunityComment!]!
+  }
+
+  type CommunityComment {
+    id: ID!
+    communityPostId: ID!
+    sellerId: ID!
+    content: String!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    post: CommunityPost!
+    author: Seller!
+  }
+
+  type CommunityPostsConnection {
+    nodes: [CommunityPost!]!
+    pageInfo: PageInfo!
+  }
+
+  type CommunityCommentsConnection {
+    nodes: [CommunityComment!]!
+    pageInfo: PageInfo!
   }
 
   scalar DateTime
   scalar JSON
 
   extend type Query {
+    # Catalog Queries
+    blogCatalog: [BlogCategory!]!
+    communityCatalog: [CommunityCategory!]!
+    # Blog Queries
     blogCategories: [BlogCategory!]!
     blogs(page: Int! = 1, pageSize: Int! = 10): BlogPostsConnection!
     blog(id: ID!): BlogPost
     blogsByCategory(category: BlogType!, page: Int! = 1, pageSize: Int! = 10): BlogPostsConnection!
     blogsByAuthor(authorId: String!, page: Int! = 1, pageSize: Int! = 10): BlogPostsConnection!
+
+    # Community Queries
+    communityCategories: [CommunityCategory!]!
+    communityPosts(page: Int! = 1, pageSize: Int! = 10): CommunityPostsConnection!
+    communityPost(id: ID!): CommunityPost
+    communityPostsByAuthor(authorId: String!, page: Int! = 1, pageSize: Int! = 10): CommunityPostsConnection!
+    communityComments(postId: ID!, page: Int! = 1, pageSize: Int! = 10): CommunityCommentsConnection!
   }
 
   extend type Mutation {
+    # Blog Mutations
+    createBlogPost(title: String!, content: String!, categoryId: ID!, type: BlogType!): BlogPost!
+    updateBlogPost(id: ID!, title: String, content: String, categoryId: ID, type: BlogType): BlogPost!
+    publishBlogPost(id: ID!): BlogPost!
+    unpublishBlogPost(id: ID!): BlogPost!
+    deleteBlogPost(id: ID!): Boolean!
     likeBlog(id: ID!, sellerId: String!): BlogPost!
     dislikeBlog(id: ID!, sellerId: String!): BlogPost!
+
+    # Community Mutations
+    createCommunityPost(title: String!, content: String!, images: [String!]): CommunityPost!
+    updateCommunityPost(id: ID!, title: String, content: String, images: [String!]): CommunityPost!
+    deleteCommunityPost(id: ID!): Boolean!
+    likeCommunityPost(id: ID!): CommunityPost!
+    createCommunityComment(postId: ID!, content: String!): CommunityComment!
+    updateCommunityComment(id: ID!, content: String!): CommunityComment!
+    deleteCommunityComment(id: ID!): Boolean!
   }
 `;

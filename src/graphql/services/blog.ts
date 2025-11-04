@@ -1,10 +1,24 @@
 import prisma from "../../client/prisma";
 import { ErrorService } from "../../errors/errors";
-import { BlogType, type BlogCategory } from "../../types/blog";
+import { BlogType } from "../../types/blog";
+import { BlogType as PrismaBlogType, type BlogCategory } from "@prisma/client";
 import { calculatePrismaParams, createPaginatedResponse } from "../../utils/pagination";
 import { PaginationInput } from "../resolvers/blogs";
 
 export const BlogService = {
+  getBlogCatalog: async () => {
+    try {
+      const categories: BlogCategory[] = await prisma.blogCategory.findMany();
+      if (!categories || categories.length === 0) {
+        throw new ErrorService.NotFoundError("No se encontraron categorías de blogs");
+      }
+
+      return categories;
+    } catch (error) {
+      console.error("Error al intentar obtener el catálogo de blogs:", error);
+      throw new ErrorService.InternalServerError("Error al obtener el catálogo de blogs");
+    }
+  },
   getBlogCategories: async () => {
     const categories: BlogCategory[] = await prisma.blogCategory.findMany();
     if (!categories || categories.length === 0) {
@@ -79,16 +93,20 @@ export const BlogService = {
   }: { category: BlogType } & PaginationInput) => {
     try {
       const { take, skip } = calculatePrismaParams(page, pageSize);
+
+      // Convert custom BlogType to Prisma BlogType
+      const prismaCategory = category as unknown as PrismaBlogType;
+
       const totalCount = await prisma.blogPost.count({
         where: {
           isPublished: true,
-          type: category,
+          type: prismaCategory,
         },
       });
       const blogs = await prisma.blogPost.findMany({
         where: {
           isPublished: true,
-          type: category,
+          type: prismaCategory,
         },
         include: {
           author: true,
@@ -229,6 +247,140 @@ export const BlogService = {
     } catch (error) {
       console.error("Error disliking blog:", error);
       throw new ErrorService.InternalServerError("Error al dar no me gusta al blog");
+    }
+  },
+
+  createBlogPost: async ({
+    title,
+    content,
+    categoryId,
+    type,
+    authorId = "temp-admin-id", // This should come from authentication context
+  }: {
+    title: string;
+    content: string;
+    categoryId: number;
+    type: BlogType;
+    authorId?: string;
+  }) => {
+    try {
+      const prismaType = type as unknown as PrismaBlogType;
+
+      const blog = await prisma.blogPost.create({
+        data: {
+          title,
+          content,
+          blogCategoryId: categoryId,
+          type: prismaType,
+          authorId,
+          updatedAt: new Date(),
+        },
+        include: {
+          author: true,
+          blogCategory: true,
+        },
+      });
+
+      return blog;
+    } catch (error) {
+      console.error("Error creating blog post:", error);
+      throw new ErrorService.InternalServerError("Error al crear la publicación del blog");
+    }
+  },
+
+  updateBlogPost: async ({
+    id,
+    title,
+    content,
+    categoryId,
+    type,
+  }: {
+    id: number;
+    title?: string;
+    content?: string;
+    categoryId?: number;
+    type?: BlogType;
+  }) => {
+    try {
+      const updateData: Record<string, unknown> = {
+        updatedAt: new Date(),
+      };
+
+      if (title !== undefined) updateData.title = title;
+      if (content !== undefined) updateData.content = content;
+      if (categoryId !== undefined) updateData.blogCategory = { connect: { id: categoryId } };
+      if (type !== undefined) updateData.type = type as unknown as PrismaBlogType;
+
+      const blog = await prisma.blogPost.update({
+        where: { id },
+        data: updateData,
+        include: {
+          author: true,
+          blogCategory: true,
+        },
+      });
+
+      return blog;
+    } catch (error) {
+      console.error("Error updating blog post:", error);
+      throw new ErrorService.InternalServerError("Error al actualizar la publicación del blog");
+    }
+  },
+
+  publishBlogPost: async ({ id }: { id: number }) => {
+    try {
+      const blog = await prisma.blogPost.update({
+        where: { id },
+        data: {
+          isPublished: true,
+          publishedAt: new Date(),
+          updatedAt: new Date(),
+        },
+        include: {
+          author: true,
+          blogCategory: true,
+        },
+      });
+
+      return blog;
+    } catch (error) {
+      console.error("Error publishing blog post:", error);
+      throw new ErrorService.InternalServerError("Error al publicar la publicación del blog");
+    }
+  },
+
+  unpublishBlogPost: async ({ id }: { id: number }) => {
+    try {
+      const blog = await prisma.blogPost.update({
+        where: { id },
+        data: {
+          isPublished: false,
+          publishedAt: null,
+          updatedAt: new Date(),
+        },
+        include: {
+          author: true,
+          blogCategory: true,
+        },
+      });
+
+      return blog;
+    } catch (error) {
+      console.error("Error unpublishing blog post:", error);
+      throw new ErrorService.InternalServerError("Error al despublicar la publicación del blog");
+    }
+  },
+
+  deleteBlogPost: async ({ id }: { id: number }) => {
+    try {
+      await prisma.blogPost.delete({
+        where: { id },
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Error deleting blog post:", error);
+      throw new ErrorService.InternalServerError("Error al eliminar la publicación del blog");
     }
   },
 };
