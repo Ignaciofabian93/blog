@@ -1,9 +1,57 @@
 import prisma from "../../client/prisma";
 import { ErrorService } from "../../errors/errors";
-import { BlogType } from "../../types/blog";
-import { BlogType as PrismaBlogType, type BlogCategory } from "@prisma/client";
+import { BlogCategory, BlogType } from "../../types/blog";
 import { calculatePrismaParams, createPaginatedResponse } from "../../utils/pagination";
 import { PaginationInput } from "../resolvers/blogs";
+
+// Type for Prisma BlogType enum values
+type PrismaBlogType =
+  | "RECYCLING"
+  | "POLLUTION"
+  | "SUSTAINABILITY"
+  | "CIRCULAR_ECONOMY"
+  | "USED_PRODUCTS"
+  | "REUSE"
+  | "ENVIRONMENT"
+  | "UPCYCLING"
+  | "RESPONSIBLE_CONSUMPTION"
+  | "ECO_TIPS"
+  | "ENVIRONMENTAL_IMPACT"
+  | "SUSTAINABLE_LIVING"
+  | "OTHER";
+
+// Mapping function to convert display BlogType to database enum values
+const mapBlogTypeToDatabase = (blogType: BlogType): PrismaBlogType => {
+  switch (blogType) {
+    case BlogType.RECYCLING:
+      return "RECYCLING";
+    case BlogType.POLLUTION:
+      return "POLLUTION";
+    case BlogType.SUSTAINABILITY:
+      return "SUSTAINABILITY";
+    case BlogType.CIRCULAR_ECONOMY:
+      return "CIRCULAR_ECONOMY";
+    case BlogType.USED_PRODUCTS:
+      return "USED_PRODUCTS";
+    case BlogType.REUSE:
+      return "REUSE";
+    case BlogType.ENVIRONMENT:
+      return "ENVIRONMENT";
+    case BlogType.UPCYCLING:
+      return "UPCYCLING";
+    case BlogType.RESPONSIBLE_CONSUMPTION:
+      return "RESPONSIBLE_CONSUMPTION";
+    case BlogType.ECO_TIPS:
+      return "ECO_TIPS";
+    case BlogType.ENVIRONMENTAL_IMPACT:
+      return "ENVIRONMENTAL_IMPACT";
+    case BlogType.SUSTAINABLE_LIVING:
+      return "SUSTAINABLE_LIVING";
+    case BlogType.OTHER:
+    default:
+      return "OTHER";
+  }
+};
 
 export const BlogService = {
   getBlogCatalog: async () => {
@@ -94,19 +142,19 @@ export const BlogService = {
     try {
       const { take, skip } = calculatePrismaParams(page, pageSize);
 
-      // Convert custom BlogType to Prisma BlogType
-      const prismaCategory = category as unknown as PrismaBlogType;
+      // Convert custom BlogType to database string value
+      const databaseType = mapBlogTypeToDatabase(category);
 
       const totalCount = await prisma.blogPost.count({
         where: {
           isPublished: true,
-          type: prismaCategory,
+          type: databaseType,
         },
       });
       const blogs = await prisma.blogPost.findMany({
         where: {
           isPublished: true,
-          type: prismaCategory,
+          type: databaseType,
         },
         include: {
           author: true,
@@ -264,14 +312,14 @@ export const BlogService = {
     authorId?: string;
   }) => {
     try {
-      const prismaType = type as unknown as PrismaBlogType;
+      const databaseType = mapBlogTypeToDatabase(type);
 
       const blog = await prisma.blogPost.create({
         data: {
           title,
           content,
           blogCategoryId: categoryId,
-          type: prismaType,
+          type: databaseType,
           authorId,
           updatedAt: new Date(),
         },
@@ -309,7 +357,7 @@ export const BlogService = {
       if (title !== undefined) updateData.title = title;
       if (content !== undefined) updateData.content = content;
       if (categoryId !== undefined) updateData.blogCategory = { connect: { id: categoryId } };
-      if (type !== undefined) updateData.type = type as unknown as PrismaBlogType;
+      if (type !== undefined) updateData.type = mapBlogTypeToDatabase(type);
 
       const blog = await prisma.blogPost.update({
         where: { id },
