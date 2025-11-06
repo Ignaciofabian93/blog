@@ -51,6 +51,7 @@ export const typeDefs = gql`
     icon: String
     description: String
     blogs: [BlogPost!]!
+    href: String
   }
 
   type BlogPost @key(fields: "id") {
@@ -88,6 +89,7 @@ export const typeDefs = gql`
     id: ID!
     category: String!
     subcategories: [CommunitySubCategory!]!
+    href: String
   }
 
   type CommunitySubCategory {
@@ -95,6 +97,7 @@ export const typeDefs = gql`
     subCategory: String!
     communityCategoryId: ID!
     category: CommunityCategory!
+    href: String
   }
 
   type CommunityPost @key(fields: "id") {

@@ -313,14 +313,14 @@ enum WeightUnit {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 model SellerLabel {
-  id                   Int                    @id @default(autoincrement())
-  labelName            String                 @unique
+  id                   Int             @id @default(autoincrement())
+  labelName            String          @unique
   transactionKind      TransactionKind
   transactionsRequired Int
   description          String? // e.g., "Complete 5 second-hand purchases"
   badgeIcon            String? // Icon/image URL for the badge
-  createdAt            DateTime               @default(now())
-  updatedAt            DateTime               @updatedAt
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
 
   // Relations - sellers who have achieved this label
   achievedBy SellerAchievedLabel[]
@@ -332,14 +332,14 @@ model SellerLabel {
 // Junction table to track which sellers have earned which labels
 // WHY NECESSARY: Allows tracking WHEN labels were earned, current progress, and prevents duplicate achievements
 model SellerAchievedLabel {
-  id          Int      @id @default(autoincrement())
-  sellerId    String
-  labelId     Int
-  achievedAt  DateTime @default(now()) // When the seller earned this badge
-  
+  id         Int      @id @default(autoincrement())
+  sellerId   String
+  labelId    Int
+  achievedAt DateTime @default(now()) // When the seller earned this badge
+
   // Progress tracking (optional but useful)
   currentCount Int? // Current transaction count for this type (e.g., "7 purchases done, need 15 for next badge")
-  
+
   seller Seller      @relation(fields: [sellerId], references: [id], onDelete: Cascade)
   label  SellerLabel @relation(fields: [labelId], references: [id], onDelete: Cascade)
 
@@ -627,7 +627,7 @@ model AdminActivityLog {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 model Seller {
-  id                     String         @id     @default(uuid())
+  id                     String         @id @default(uuid())
   email                  String         @unique
   password               String
   sellerType             SellerType
@@ -647,7 +647,7 @@ model Seller {
   points                 Int            @default(0)
   sellerLevelId          Int?
   sellerLevel            SellerLevel?   @relation(fields: [sellerLevelId], references: [id])
-  
+
   // Gamification - Achieved labels (many-to-many through junction table)
   achievedLabels SellerAchievedLabel[]
 
@@ -792,6 +792,7 @@ model Department {
   departmentName     String
   departmentImage    String?
   departmentCategory DepartmentCategory[]
+  href               String?
 }
 
 model DepartmentCategory {
@@ -800,6 +801,7 @@ model DepartmentCategory {
   departmentCategoryName String
   department             Department        @relation(fields: [departmentId], references: [id])
   productCategory        ProductCategory[]
+  href                   String?
 }
 
 model ProductCategory {
@@ -816,6 +818,7 @@ model ProductCategory {
   departmentCategory DepartmentCategory        @relation(fields: [departmentCategoryId], references: [id])
   // NEW: Junction table relation for unlimited materials
   materials          ProductCategoryMaterial[]
+  href               String?
 
   @@index([departmentCategoryId])
 }
@@ -890,6 +893,7 @@ model StoreCategory {
   id            Int                @id @default(autoincrement())
   category      String
   subcategories StoreSubCategory[]
+  href          String?
 }
 
 model StoreSubCategory {
@@ -898,6 +902,7 @@ model StoreSubCategory {
   storeCategoryId Int
   storeCategory   StoreCategory  @relation(fields: [storeCategoryId], references: [id])
   storeProducts   StoreProduct[]
+  href            String?
 }
 
 model StoreProduct {
@@ -1003,6 +1008,7 @@ model ServiceCategory {
   id            Int                  @id @default(autoincrement())
   category      String               @unique
   subcategories ServiceSubCategory[]
+  href          String?
 }
 
 model ServiceSubCategory {
@@ -1011,6 +1017,7 @@ model ServiceSubCategory {
   serviceCategoryId Int
   serviceCategory   ServiceCategory @relation(fields: [serviceCategoryId], references: [id])
   services          Service[]
+  href              String?
 }
 
 model Service {
@@ -1134,6 +1141,7 @@ model BlogCategory {
   icon        String
   description String
   posts       BlogPost[]
+  href        String?
 }
 
 model CommunityComment {
@@ -1172,6 +1180,7 @@ model CommunityCategory {
   id            Int                    @id @default(autoincrement())
   category      String                 @unique
   subcategories CommunitySubCategory[]
+  href          String?
 }
 
 model CommunitySubCategory {
@@ -1179,6 +1188,7 @@ model CommunitySubCategory {
   subCategory         String
   communityCategoryId Int
   communityCategory   CommunityCategory @relation(fields: [communityCategoryId], references: [id])
+  href                String?
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

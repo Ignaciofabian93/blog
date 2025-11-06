@@ -73,8 +73,6 @@ export const BlogService = {
       throw new ErrorService.NotFoundError("No se encontraron categorías de blogs");
     }
 
-    console.log("Categories fetched:", categories);
-
     return categories;
   },
   getBlogs: async ({ page = 1, pageSize = 10 }: PaginationInput) => {
