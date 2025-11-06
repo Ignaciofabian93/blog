@@ -18,7 +18,8 @@ type PrismaBlogType =
   | "ECO_TIPS"
   | "ENVIRONMENTAL_IMPACT"
   | "SUSTAINABLE_LIVING"
-  | "OTHER";
+  | "OTHER"
+  | "SECURITY";
 
 // Mapping function to convert display BlogType to database enum values
 const mapBlogTypeToDatabase = (blogType: BlogType): PrismaBlogType => {
@@ -47,6 +48,8 @@ const mapBlogTypeToDatabase = (blogType: BlogType): PrismaBlogType => {
       return "ENVIRONMENTAL_IMPACT";
     case BlogType.SUSTAINABLE_LIVING:
       return "SUSTAINABLE_LIVING";
+    case BlogType.SECURITY:
+      return "SECURITY";
     case BlogType.OTHER:
     default:
       return "OTHER";
@@ -87,9 +90,6 @@ export const BlogService = {
         where: {
           isPublished: true,
         },
-        include: {
-          author: true,
-        },
         orderBy: {
           publishedAt: "desc",
         },
@@ -116,9 +116,6 @@ export const BlogService = {
 
       const blog = await prisma.blogPost.findFirst({
         where: { id },
-        include: {
-          author: true,
-        },
       });
 
       if (!blog) {
@@ -133,15 +130,15 @@ export const BlogService = {
   },
 
   getBlogsByCategory: async ({
-    category = BlogType.OTHER,
+    category,
     page = 1,
     pageSize = 10,
-  }: { category: BlogType } & PaginationInput) => {
+  }: { category: keyof typeof BlogType } & PaginationInput) => {
     try {
       const { take, skip } = calculatePrismaParams(page, pageSize);
 
       // Convert custom BlogType to database string value
-      const databaseType = mapBlogTypeToDatabase(category);
+      const databaseType = mapBlogTypeToDatabase(BlogType[category]);
 
       const totalCount = await prisma.blogPost.count({
         where: {
@@ -153,9 +150,6 @@ export const BlogService = {
         where: {
           isPublished: true,
           type: databaseType,
-        },
-        include: {
-          author: true,
         },
         orderBy: {
           publishedAt: "desc",
@@ -182,9 +176,6 @@ export const BlogService = {
       const blogs = await prisma.blogPost.findMany({
         where: {
           authorId,
-        },
-        include: {
-          author: true,
         },
         orderBy: {
           publishedAt: "desc",
@@ -321,10 +312,6 @@ export const BlogService = {
           authorId,
           updatedAt: new Date(),
         },
-        include: {
-          author: true,
-          blogCategory: true,
-        },
       });
 
       return blog;
@@ -360,10 +347,6 @@ export const BlogService = {
       const blog = await prisma.blogPost.update({
         where: { id },
         data: updateData,
-        include: {
-          author: true,
-          blogCategory: true,
-        },
       });
 
       return blog;
@@ -382,10 +365,6 @@ export const BlogService = {
           publishedAt: new Date(),
           updatedAt: new Date(),
         },
-        include: {
-          author: true,
-          blogCategory: true,
-        },
       });
 
       return blog;
@@ -403,10 +382,6 @@ export const BlogService = {
           isPublished: false,
           publishedAt: null,
           updatedAt: new Date(),
-        },
-        include: {
-          author: true,
-          blogCategory: true,
         },
       });
 

@@ -10,4 +10,10 @@ export const resolvers = {
     ...BlogResolver.Mutation,
     ...CommunityResolver.Mutation,
   },
+  BlogPost: {
+    author(blogPost: { authorId: string }) {
+      // Return a reference that Apollo Federation will resolve from the users subgraph
+      return { __typename: "Admin", id: blogPost.authorId };
+    },
+  },
 };

@@ -12,6 +12,7 @@ export enum BlogTypeEnum {
   ENVIRONMENTAL_IMPACT,
   SUSTAINABLE_LIVING,
   OTHER,
+  SECURITY,
 }
 
 export enum BlogType {
@@ -28,6 +29,7 @@ export enum BlogType {
   ENVIRONMENTAL_IMPACT = "Impacto Ambiental",
   SUSTAINABLE_LIVING = "Vida Sustentable",
   OTHER = "Otros",
+  SECURITY = "Seguridad",
 }
 
 export type BlogCategory = {

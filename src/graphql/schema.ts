@@ -63,8 +63,7 @@ export const typeDefs = gql`
     publishedAt: DateTime
     createdAt: DateTime!
     updatedAt: DateTime!
-    category: BlogCategory!
-    author: Admin!
+    author: Admin
     likes: Int
     dislikes: Int
     type: BlogType!
@@ -110,7 +109,7 @@ export const typeDefs = gql`
     comments: Int!
     createdAt: DateTime!
     updatedAt: DateTime!
-    author: Admin!
+    author: Admin
     communityComments: [CommunityComment!]!
   }
 

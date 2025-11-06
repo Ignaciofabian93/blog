@@ -27,7 +27,7 @@ export const BlogResolver = {
     blogCategories: () => BlogService.getBlogCategories(),
     blogs: (_parent: unknown, _args: PaginationInput) => BlogService.getBlogs(_args),
     blog: (_parent: unknown, _args: { id: number }) => BlogService.getBlog(_args),
-    blogsByCategory: (_parent: unknown, _args: { category: BlogType } & PaginationInput) =>
+    blogsByCategory: (_parent: unknown, _args: { category: keyof typeof BlogType } & PaginationInput) =>
       BlogService.getBlogsByCategory(_args),
     blogsByAuthor: (_parent: unknown, _args: { authorId: string } & PaginationInput) =>
       BlogService.getBlogsByAuthor(_args),
