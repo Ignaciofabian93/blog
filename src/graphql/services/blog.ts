@@ -71,7 +71,11 @@ export const BlogService = {
     }
   },
   getBlogCategories: async () => {
-    const categories: BlogCategory[] = await prisma.blogCategory.findMany();
+    const categories: BlogCategory[] = await prisma.blogCategory.findMany({
+      include: {
+        posts: true,
+      },
+    });
     if (!categories || categories.length === 0) {
       throw new ErrorService.NotFoundError("No se encontraron categorías de blogs");
     }

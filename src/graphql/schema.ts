@@ -50,7 +50,7 @@ export const typeDefs = gql`
     name: String!
     icon: String
     description: String
-    blogs: [BlogPost!]!
+    posts: [BlogPost!]!
     href: String
   }
 
