@@ -110,12 +110,13 @@ export const BlogService = {
 
   getBlog: async ({ id }: { id: number }) => {
     try {
-      if (!id) {
+      const parsedId = Number(id);
+      if (!parsedId || isNaN(parsedId)) {
         throw new ErrorService.BadRequestError("Se requiere un ID de blog válido");
       }
 
       const blog = await prisma.blogPost.findFirst({
-        where: { id },
+        where: { id: parsedId },
       });
 
       if (!blog) {
