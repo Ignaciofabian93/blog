@@ -903,6 +903,7 @@ model StoreSubCategory {
   storeCategory   StoreCategory  @relation(fields: [storeCategoryId], references: [id])
   storeProducts   StoreProduct[]
   href            String?
+  materials       StoreProductMaterial[]
 }
 
 model StoreProduct {
@@ -939,8 +940,6 @@ model StoreProduct {
   advertisement    Advertisement[]
   storeSubCategory StoreSubCategory       @relation(fields: [subcategoryId], references: [id])
   seller           Seller                 @relation(fields: [sellerId], references: [id])
-  // NEW: Junction table relation for upcycled materials tracking
-  materials        StoreProductMaterial[]
   productComment   ProductComment[]
   productLike      ProductLike[]
 
@@ -960,7 +959,7 @@ model StoreProduct {
 // Tracks source materials used to make new products (e.g., car tires → purses)
 model StoreProductMaterial {
   id                 Int      @id @default(autoincrement())
-  storeProductId     Int
+  storeSubcategoryId Int
   materialTypeId     Int
   quantity           Float // Percentage or weight
   unit               String   @default("percentage") // "percentage", "kg", "g"
@@ -973,11 +972,11 @@ model StoreProductMaterial {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  storeProduct StoreProduct           @relation(fields: [storeProductId], references: [id], onDelete: Cascade)
-  material     MaterialImpactEstimate @relation(fields: [materialTypeId], references: [id])
+  storeSubCategory StoreSubCategory       @relation(fields: [storeSubcategoryId], references: [id], onDelete: Cascade)
+  material         MaterialImpactEstimate @relation(fields: [materialTypeId], references: [id])
 
-  @@unique([storeProductId, materialTypeId]) // Prevent duplicate materials
-  @@index([storeProductId])
+  @@unique([storeSubcategoryId, materialTypeId]) // Prevent duplicate materials
+  @@index([storeSubcategoryId])
   @@index([materialTypeId])
   @@index([isPrimary])
   @@index([isRecycled])
